@@ -48,136 +48,135 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  /* Ma Jaay Brand - Warm Senegalese Palette */
-  --terracotta: #C4652E;
+  --radius: 0.875rem;
+  --terracotta: #B8512A;
   --terracotta-foreground: #FFFFFF;
-  --gold: #D4A843;
-  --gold-foreground: #1A1A2E;
-  --background: #FFFAF5;
-  --foreground: #1A1A2E;
+  --gold: #C9952C;
+  --gold-foreground: #FFFFFF;
+  --background: #FAFAF8;
+  --foreground: #1B1B1F;
   --card: #FFFFFF;
-  --card-foreground: #1A1A2E;
+  --card-foreground: #1B1B1F;
   --popover: #FFFFFF;
-  --popover-foreground: #1A1A2E;
-  --primary: #C4652E;
+  --popover-foreground: #1B1B1F;
+  --primary: #B8512A;
   --primary-foreground: #FFFFFF;
-  --secondary: #FFF0E5;
-  --secondary-foreground: #C4652E;
-  --muted: #F5F0EB;
+  --secondary: #F7F3EF;
+  --secondary-foreground: #B8512A;
+  --muted: #F3F0EC;
   --muted-foreground: #6B7280;
-  --accent: #2D6A4F;
+  --accent: #1B6B4A;
   --accent-foreground: #FFFFFF;
   --destructive: #DC2626;
-  --border: #E8DDD4;
-  --input: #E8DDD4;
-  --ring: #C4652E;
-  --chart-1: #C4652E;
-  --chart-2: #D4A843;
-  --chart-3: #2D6A4F;
-  --chart-4: #E8956D;
-  --chart-5: #1A1A2E;
+  --border: #E8E3DD;
+  --input: #E8E3DD;
+  --ring: #B8512A;
+  --chart-1: #B8512A;
+  --chart-2: #C9952C;
+  --chart-3: #1B6B4A;
+  --chart-4: #D4845A;
+  --chart-5: #1B1B1F;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #1A1A2E;
-  --sidebar-primary: #C4652E;
+  --sidebar-foreground: #1B1B1F;
+  --sidebar-primary: #B8512A;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FFF0E5;
-  --sidebar-accent-foreground: #C4652E;
-  --sidebar-border: #E8DDD4;
-  --sidebar-ring: #C4652E;
+  --sidebar-accent: #F7F3EF;
+  --sidebar-accent-foreground: #B8512A;
+  --sidebar-border: #E8E3DD;
+  --sidebar-ring: #B8512A;
 }
 
 .dark {
-  --background: #0F0F1A;
-  --foreground: #F5F0EB;
-  --card: #1A1A2E;
-  --card-foreground: #F5F0EB;
-  --popover: #1A1A2E;
-  --popover-foreground: #F5F0EB;
-  --primary: #E8956D;
-  --primary-foreground: #1A1A2E;
-  --secondary: #2A1A10;
-  --secondary-foreground: #E8956D;
-  --muted: #252540;
+  --background: #111113;
+  --foreground: #F0ECE6;
+  --card: #1C1C20;
+  --card-foreground: #F0ECE6;
+  --popover: #1C1C20;
+  --popover-foreground: #F0ECE6;
+  --primary: #D4845A;
+  --primary-foreground: #111113;
+  --secondary: #2A1F14;
+  --secondary-foreground: #D4845A;
+  --muted: #222226;
   --muted-foreground: #9CA3AF;
-  --accent: #4ADE80;
-  --accent-foreground: #0F0F1A;
+  --accent: #34D399;
+  --accent-foreground: #111113;
   --destructive: #EF4444;
-  --border: #2A2A45;
-  --input: #2A2A45;
-  --ring: #E8956D;
-  --chart-1: #E8956D;
-  --chart-2: #D4A843;
-  --chart-3: #4ADE80;
-  --chart-4: #C4652E;
-  --chart-5: #F5F0EB;
-  --sidebar: #1A1A2E;
-  --sidebar-foreground: #F5F0EB;
-  --sidebar-primary: #E8956D;
-  --sidebar-primary-foreground: #1A1A2E;
-  --sidebar-accent: #2A1A10;
-  --sidebar-accent-foreground: #E8956D;
-  --sidebar-border: #2A2A45;
-  --sidebar-ring: #E8956D;
+  --border: #2C2C30;
+  --input: #2C2C30;
+  --ring: #D4845A;
+  --chart-1: #D4845A;
+  --chart-2: #C9952C;
+  --chart-3: #34D399;
+  --chart-4: #B8512A;
+  --chart-5: #F0ECE6;
+  --sidebar: #1C1C20;
+  --sidebar-foreground: #F0ECE6;
+  --sidebar-primary: #D4845A;
+  --sidebar-primary-foreground: #111113;
+  --sidebar-accent: #2A1F14;
+  --sidebar-accent-foreground: #D4845A;
+  --sidebar-border: #2C2C30;
+  --sidebar-ring: #D4845A;
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
 }
 
-/* Ma Jaay Custom Styles */
 @layer utilities {
-  .gradient-majaay {
-    background: linear-gradient(135deg, #C4652E 0%, #D4A843 100%);
-  }
-  .gradient-majaay-dark {
-    background: linear-gradient(135deg, #1A1A2E 0%, #2D6A4F 100%);
+  /* Premium gradients */
+  .gradient-majaay { background: linear-gradient(135deg, #B8512A 0%, #C9952C 50%, #D4A843 100%); }
+  .gradient-majaay-dark { background: linear-gradient(160deg, #1B1B1F 0%, #1B4D3A 100%); }
+  .gradient-hero { background: linear-gradient(165deg, #B8512A 0%, #9C3F1E 40%, #1B1B1F 100%); }
+  .gradient-gold-shimmer {
+    background: linear-gradient(135deg, #C9952C 0%, #E8C97A 50%, #C9952C 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
   }
   .text-gradient-gold {
-    background: linear-gradient(135deg, #D4A843 0%, #E8956D 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    background: linear-gradient(135deg, #C9952C 0%, #E8C97A 50%, #C9952C 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
-  .badge-boosted {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
+
+  /* Premium effects */
+  .badge-boosted { animation: pulse-glow 2.5s ease-in-out infinite; }
   .pattern-african {
-    background-image: radial-gradient(circle at 25% 25%, rgba(196, 101, 46, 0.05) 0%, transparent 50%),
-                     radial-gradient(circle at 75% 75%, rgba(212, 168, 67, 0.05) 0%, transparent 50%);
+    background-image: radial-gradient(circle at 20% 20%, rgba(184, 81, 42, 0.03) 0%, transparent 50%),
+                     radial-gradient(circle at 80% 80%, rgba(201, 149, 44, 0.03) 0%, transparent 50%);
   }
+  .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
+  .shadow-premium { box-shadow: 0 1px 3px rgba(27,27,31,0.04), 0 4px 12px rgba(27,27,31,0.06), 0 12px 28px rgba(27,27,31,0.04); }
+  .shadow-card-hover { box-shadow: 0 4px 6px rgba(27,27,31,0.03), 0 12px 24px rgba(27,27,31,0.08); }
+  .shadow-inner-soft { box-shadow: inset 0 1px 3px rgba(27,27,31,0.06); }
+
+  /* Category icon containers */
+  .cat-icon { @apply w-[60px] h-[60px] rounded-2xl flex items-center justify-center transition-all duration-300; }
+  .cat-icon:hover { transform: translateY(-2px); }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(212, 168, 67, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(212, 168, 67, 0.6); }
+  0%, 100% { box-shadow: 0 0 4px rgba(201, 149, 44, 0.25); }
+  50% { box-shadow: 0 0 16px rgba(201, 149, 44, 0.5); }
 }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.4s ease-out both; }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Hide scrollbar for mobile nav */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* Safe area for mobile */
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }

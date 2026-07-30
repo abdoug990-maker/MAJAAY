@@ -7,15 +7,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, Eye, Clock, Shield, MessageCircle, Zap, Heart, Share2, Phone, Flag } from 'lucide-react';
-import { formatPrice, getCategoryEmoji } from './HomePage';
+import { Car, Building2, Smartphone, Shirt, Home, Briefcase, Dumbbell, ShoppingBasket, Package, ArrowLeft, MapPin, Eye, Clock, Shield, MessageCircle, Zap, Share2, Phone, Heart, ChevronLeft } from 'lucide-react';
+import { formatPrice } from './HomePage';
+import { getCategoryStyle } from '@/lib/category-icons';
 import { toast } from 'sonner';
+import React from 'react';
+
+const ICON_MAP: Record<string, React.FC<any>> = { vehicules: Car, immobilier: Building2, electronique: Smartphone, 'mode-beaute': Shirt, 'maison-jardin': Home, 'emploi-services': Briefcase, 'loisirs-sport': Dumbbell, alimentation: ShoppingBasket };
 
 export function ListingDetailPage() {
-  const { params, navigate } = useRouterStore();
+  const { params, navigate, goBack } = useRouterStore();
   const user = useAuthStore((s) => s.user);
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -34,150 +39,156 @@ export function ListingDetailPage() {
     if (!user) { navigate('login'); return; }
     try {
       const res = await fetch('/api/boosts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listingId: listing.id, userId: user.id, durationHours: 48, amount: 1000 }),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success('Annonce boostée ! Elle sera visible en tête de liste pendant 48h.');
-        setListing({ ...listing, isBoosted: true });
-      } else {
-        toast.error(data.error);
-      }
+      if (res.ok) { toast.success('Annonce boostée pendant 48h !'); setListing({ ...listing, isBoosted: true }); }
+      else toast.error(data.error);
     } catch { toast.error('Erreur lors du boost'); }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen pb-24 px-4">
-        <Skeleton className="h-64 w-full rounded-xl mb-4" />
-        <Skeleton className="h-8 w-3/4 mb-2" />
-        <Skeleton className="h-6 w-1/3 mb-4" />
-        <Skeleton className="h-24 w-full mb-4" />
-        <Skeleton className="h-12 w-full" />
+      <div className="min-h-screen pb-24">
+        <Skeleton className="h-72 w-full" />
+        <div className="px-4 -mt-6"><Skeleton className="h-40 w-full rounded-2xl" /></div>
       </div>
     );
   }
 
   if (!listing) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <p className="text-muted-foreground mb-4">Annonce non trouvée</p>
-        <Button onClick={() => navigate('home')}>Retour</Button>
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-3">
+        <p className="text-muted-foreground">Annonce non trouvée</p>
+        <Button variant="outline" onClick={() => navigate('home')}>Retour</Button>
       </div>
     );
   }
 
   const images = listing.images && listing.images !== '[]' ? JSON.parse(listing.images) : [];
   const isOwner = user && user.id === listing.sellerId;
-  const tierColors: Record<string, string> = {
-    premium_plus: 'bg-gradient-to-r from-amber-400 to-amber-600 text-white',
-    premium: 'bg-terracotta text-white',
-    standard: 'bg-accent text-accent-foreground',
-    free: 'bg-muted text-muted-foreground',
+  const CatIcon = listing.category?.slug ? (ICON_MAP[listing.category.slug] || Package) : Package;
+  const catStyle = getCategoryStyle(listing.category?.slug);
+  const tierConfig: Record<string, { label: string; cls: string }> = {
+    premium_plus: { label: 'Premium+', cls: 'gradient-gold-shimmer text-white' },
+    premium: { label: 'Premium', cls: 'gradient-majaay text-white' },
+    standard: { label: 'Standard', cls: 'bg-accent text-accent-foreground' },
+    free: { label: 'Gratuit', cls: 'bg-muted text-muted-foreground' },
   };
+  const tier = tierConfig[listing.seller?.subscriptionTier || 'free'] || tierConfig.free;
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Back Button Overlay */}
-      <div className="relative">
-        <Button variant="ghost" size="icon" className="absolute top-12 left-2 z-10 bg-white/80 backdrop-blur rounded-full" onClick={() => navigate('home')}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+      {/* Image header */}
+      <div className="relative bg-muted">
+        <div className="absolute top-12 left-4 z-10 flex gap-2">
+          <button onClick={() => goBack()} className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-lg flex items-center justify-center text-white hover:bg-black/50 transition-colors">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="absolute top-12 right-4 z-10 flex gap-2">
+          <button onClick={() => setLiked(!liked)} className={`w-9 h-9 rounded-full bg-black/30 backdrop-blur-lg flex items-center justify-center transition-colors ${liked ? 'text-red-400' : 'text-white'}`}>
+            <Heart className="w-[18px] h-[18px]" fill={liked ? 'currentColor' : 'none'} />
+          </button>
+        </div>
+
         {images.length > 0 ? (
-          <img src={images[0]} alt={listing.title} className="w-full h-64 md:h-96 object-cover" />
+          <img src={images[0]} alt={listing.title} className="w-full h-72 md:h-96 object-cover" />
         ) : (
-          <div className="w-full h-64 md:h-96 gradient-majaay flex items-center justify-center">
-            <span className="text-white/60 text-6xl font-bold">{getCategoryEmoji(listing.category?.slug)}</span>
+          <div className="w-full h-72 md:h-96 flex items-center justify-center bg-gradient-to-b from-muted to-muted/50">
+            <CatIcon size={48} strokeWidth={1} className="text-muted-foreground/25" />
           </div>
         )}
         {listing.isBoosted && (
-          <Badge className="absolute top-14 right-2 bg-amber-500 text-white badge-boosted flex items-center gap-1">
-            <Zap className="w-3 h-3" /> Sponsorisé
+          <Badge className="absolute bottom-4 left-4 bg-amber-500/95 backdrop-blur text-white text-[11px] font-medium badge-boosted flex items-center gap-1 px-2.5 py-1 rounded-lg">
+            <Zap className="w-3.5 h-3.5 fill-current" /> Sponsorisé
           </Badge>
         )}
       </div>
 
-      <div className="px-4 -mt-6 relative z-10">
-        <Card className="shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <Badge variant="secondary" className="text-[11px]">{listing.category?.name}</Badge>
-              <Badge className={`${tierColors[listing.seller?.subscriptionTier || 'free']} text-[10px]`}>
-                {listing.seller?.subscriptionTier === 'premium_plus' ? 'Premium+' : listing.seller?.subscriptionTier === 'premium' ? 'Premium' : listing.seller?.subscriptionTier === 'standard' ? 'Standard' : 'Gratuit'}
-              </Badge>
+      <div className="px-4 -mt-5 relative z-10">
+        {/* Main card */}
+        <Card className="shadow-premium border-0 rounded-2xl overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`w-7 h-7 rounded-lg ${catStyle.bg} flex items-center justify-center`}>
+                <CatIcon size={15} strokeWidth={1.5} className={catStyle.icon} />
+              </div>
+              <Badge variant="secondary" className="text-[11px] font-medium rounded-lg">{listing.category?.name}</Badge>
+              <div className="flex-1" />
+              <Badge className={`${tier.cls} text-[10px] font-medium rounded-lg px-2`}>{tier.label}</Badge>
             </div>
-            <h1 className="text-xl font-bold mb-2">{listing.title}</h1>
-            <p className="text-2xl font-bold text-terracotta mb-3">{formatPrice(listing.price)}</p>
+
+            <h1 className="text-[20px] font-bold leading-tight mb-2 tracking-tight">{listing.title}</h1>
+            <p className="text-2xl font-extrabold text-terracotta tracking-tight mb-4">{formatPrice(listing.price)}</p>
+
             {listing.negotiable && listing.price && (
-              <Badge variant="outline" className="mb-3">Prix négociable</Badge>
+              <Badge variant="outline" className="mb-4 text-[11px] font-medium rounded-lg">Prix négociable</Badge>
             )}
-            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mb-3">
-              <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{listing.city}{listing.location ? ` · ${listing.location}` : ''}</span>
-              <span className="flex items-center gap-1"><Eye className="w-4 h-4" />{listing.views} vues</span>
-              <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{new Date(listing.createdAt).toLocaleDateString('fr-FR')}</span>
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-muted-foreground mb-4">
+              <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{listing.city}{listing.location ? ` · ${listing.location}` : ''}</span>
+              <span className="flex items-center gap-1.5"><Eye className="w-4 h-4" />{listing.views} vues</span>
+              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{new Date(listing.createdAt).toLocaleDateString('fr-FR')}</span>
             </div>
-            <div className="flex gap-2 mb-3">
-              <Badge variant="outline">{listing.condition === 'neuf' ? 'Neuf' : listing.condition === 'reconditionne' ? 'Reconditionné' : 'Usage'}</Badge>
-              {listing.category && <Badge variant="outline">{getCategoryEmoji(listing.category.slug)} {listing.category.name}</Badge>}
+
+            <div className="flex gap-2 mb-4">
+              <Badge variant="outline" className="rounded-lg text-[11px] font-medium capitalize">{listing.condition === 'neuf' ? 'Neuf' : listing.condition === 'reconditionne' ? 'Reconditionné' : 'Usage'}</Badge>
             </div>
+
             {listing.description && (
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{listing.description}</p>
+              <div className="pt-3 border-t border-border/60">
+                <h3 className="font-semibold text-[13px] mb-2 text-muted-foreground uppercase tracking-wider">Description</h3>
+                <p className="text-[14px] leading-relaxed whitespace-pre-wrap text-foreground/85">{listing.description}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Seller Info */}
-        <Card className="mt-4">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full gradient-majaay flex items-center justify-center text-white font-bold text-lg">
-                {listing.seller?.name?.[0] || 'U'}
+        {/* Seller card */}
+        <Card className="mt-3 shadow-sm border-0 rounded-2xl">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl gradient-majaay flex items-center justify-center text-white font-bold text-[15px] flex-shrink-0">
+              {listing.seller?.name?.[0] || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-[14px] truncate">{listing.seller?.name}</span>
+                {listing.seller?.isVerifiedSeller && <Shield className="w-4 h-4 text-accent" />}
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold">{listing.seller?.name}</span>
-                  {listing.seller?.isVerifiedSeller && <Shield className="w-4 h-4 text-accent" />}
-                </div>
-                <span className="text-xs text-muted-foreground">Membre Ma Jaay</span>
-              </div>
+              <span className="text-[12px] text-muted-foreground">Membre Ma Jaay</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
+        {/* Action buttons */}
         {!isOwner && (
-          <div className="mt-4 space-y-3">
-            <Button className="w-full h-12 gradient-majaay text-white font-semibold flex items-center gap-2" onClick={handleContact}>
-              <MessageCircle className="w-5 h-5" /> Contacter le vendeur
+          <div className="mt-4 space-y-2.5">
+            <Button className="w-full h-[50px] gradient-majaay text-white font-semibold text-[15px] rounded-2xl shadow-lg shadow-terracotta/20 flex items-center gap-2" onClick={handleContact}>
+              <MessageCircle className="w-5 h-5" strokeWidth={2} /> Contacter le vendeur
             </Button>
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1 h-11 flex items-center gap-2" onClick={() => toast.info('Appel direct bientôt disponible !')}>
+            <div className="flex gap-2.5">
+              <Button variant="outline" className="flex-1 h-11 rounded-xl font-medium text-[13px] flex items-center gap-2" onClick={() => toast.info('Appel direct bientôt disponible !')}>
                 <Phone className="w-4 h-4" /> Appeler
               </Button>
-              <Button variant="outline" className="flex-1 h-11 flex items-center gap-2" onClick={() => toast.info('Partagé !')}>
+              <Button variant="outline" className="flex-1 h-11 rounded-xl font-medium text-[13px] flex items-center gap-2" onClick={() => toast.info('Lien copié !')}>
                 <Share2 className="w-4 h-4" /> Partager
               </Button>
             </div>
           </div>
         )}
 
-        {/* Owner Actions */}
         {isOwner && (
-          <div className="mt-4 space-y-3">
-            {!listing.isBoosted && (
-              <Button className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white font-semibold flex items-center gap-2" onClick={handleBoost}>
-                <Zap className="w-5 h-5" /> Booster cette annonce (1 000 FCFA / 48h)
+          <div className="mt-4">
+            {!listing.isBoosted ? (
+              <Button className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl flex items-center gap-2 shadow-sm" onClick={handleBoost}>
+                <Zap className="w-4 h-4" strokeWidth={2} fill="currentColor" /> Booster (1 000 FCFA / 48h)
               </Button>
-            )}
-            {listing.isBoosted && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
-                <span className="text-sm font-medium text-amber-800">Annonce boostée</span>
+            ) : (
+              <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl flex items-center gap-2.5">
+                <Zap className="w-4 h-4 text-amber-500" fill="currentColor" />
+                <span className="text-[13px] font-medium text-amber-800">Annonce boostée</span>
               </div>
             )}
           </div>

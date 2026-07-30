@@ -3,75 +3,64 @@
 import { useState } from 'react';
 import { useRouterStore } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, Zap, Star, Crown, X } from 'lucide-react';
+import { ArrowLeft, Check, Zap, Star, Crown, X, Gem, Medal, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import React from 'react';
 
 const PLANS = [
   {
-    tier: 'free',
-    name: 'Gratuit',
-    price: 0,
-    icon: '🆓',
-    color: 'border-muted',
-    popular: false,
+    tier: 'free', name: 'Gratuit', price: 0,
+    Icon: () => <Medal className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} />,
+    color: 'border-border/60', popular: false,
     features: [
-      { text: '3 annonces actives', included: true },
-      { text: '3 photos par annonce', included: true },
-      { text: 'Visibilité standard', included: true },
-      { text: 'Badge vendeur', included: false },
-      { text: 'Statistiques', included: false },
-      { text: 'Support prioritaire', included: false },
+      { text: '3 annonces actives', ok: true },
+      { text: '3 photos par annonce', ok: true },
+      { text: 'Visibilité standard', ok: true },
+      { text: 'Badge vendeur', ok: false },
+      { text: 'Statistiques', ok: false },
+      { text: 'Support prioritaire', ok: false },
     ],
   },
   {
-    tier: 'standard',
-    name: 'Standard',
-    price: 2200,
-    icon: '🥈',
-    color: 'border-accent',
-    popular: false,
+    tier: 'standard', name: 'Standard', price: 2200,
+    Icon: () => <Star className="w-6 h-6 text-accent" strokeWidth={1.5} />,
+    color: 'border-accent/40', popular: false,
     features: [
-      { text: 'Annonces illimitées', included: true },
-      { text: '5 photos + 1 vidéo', included: true },
-      { text: 'Badge "Standard"', included: true },
-      { text: 'Statistiques de base', included: true },
-      { text: 'Support par chat', included: true },
-      { text: 'Mise en avant boutique', included: false },
+      { text: 'Annonces illimitées', ok: true },
+      { text: '5 photos + 1 vidéo', ok: true },
+      { text: 'Badge "Standard"', ok: true },
+      { text: 'Statistiques de base', ok: true },
+      { text: 'Support par chat', ok: true },
+      { text: 'Mise en avant boutique', ok: false },
     ],
   },
   {
-    tier: 'premium',
-    name: 'Premium',
-    price: 3600,
-    icon: '⭐',
-    color: 'border-terracotta',
-    popular: true,
+    tier: 'premium', name: 'Premium', price: 3600,
+    Icon: () => <Crown className="w-6 h-6 text-terracotta" strokeWidth={1.5} />,
+    color: 'border-terracotta/40', popular: true,
     features: [
-      { text: 'Annonces illimitées', included: true },
-      { text: '10 photos + 2 vidéos', included: true },
-      { text: 'Badge "Premium" doré', included: true },
-      { text: 'Priorité dans les résultats', included: true },
-      { text: 'Statistiques avancées', included: true },
-      { text: 'Support prioritaire', included: true },
+      { text: 'Annonces illimitées', ok: true },
+      { text: '10 photos + 2 vidéos', ok: true },
+      { text: 'Badge "Premium" doré', ok: true },
+      { text: 'Priorité résultats', ok: true },
+      { text: 'Statistiques avancées', ok: true },
+      { text: 'Support prioritaire', ok: true },
     ],
   },
   {
-    tier: 'premium_plus',
-    name: 'Premium+',
-    price: 7000,
-    icon: '👑',
-    color: 'border-amber-400',
-    popular: false,
+    tier: 'premium_plus', name: 'Premium+', price: 7000,
+    Icon: () => <Gem className="w-6 h-6 text-gold" strokeWidth={1.5} />,
+    color: 'border-gold/40', popular: false,
     features: [
-      { text: 'Boutique personnalisée URL', included: true },
-      { text: 'Photos et vidéos illimitées', included: true },
-      { text: 'Badge doré animé', included: true },
-      { text: 'Ma Jaay Ads Manager', included: true },
-      { text: 'Alertes acheteurs temps réel', included: true },
-      { text: 'Export catalogue PDF/Excel', included: true },
+      { text: 'Boutique personnalisée URL', ok: true },
+      { text: 'Photos et vidéos illimitées', ok: true },
+      { text: 'Badge doré animé', ok: true },
+      { text: 'Ma Jaay Ads Manager', ok: true },
+      { text: 'Alertes acheteurs temps réel', ok: true },
+      { text: 'Export catalogue PDF/Excel', ok: true },
     ],
   },
 ];
@@ -83,99 +72,89 @@ export function PlansPage() {
 
   const handleSubscribe = async (tier: string, price: number) => {
     if (!user) { navigate('login'); return; }
-    if (price === 0) { toast.info('Vous êtes déjà sur le plan gratuit !'); return; }
+    if (price === 0) { toast.info('Vous êtes sur le plan gratuit'); return; }
     setSubscribing(tier);
     try {
-      const res = await fetch('/api/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, tier }),
-      });
+      const res = await fetch('/api/subscriptions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, tier }) });
       const data = await res.json();
       if (res.ok) {
-        // Refresh user data
-        const checkRes = await fetch('/api/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'check', userId: user.id }),
-        });
+        const checkRes = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'check', userId: user.id }) });
         const checkData = await checkRes.json();
-        if (checkData.user) {
-          useAuthStore.getState().setUser(checkData.user);
-        }
-        toast.success(`Bienvenue sur le plan ${tier === 'premium_plus' ? 'Premium+' : tier === 'premium' ? 'Premium' : 'Standard'} !`);
+        if (checkData.user) useAuthStore.getState().setUser(checkData.user);
+        toast.success(`Bienvenue ${tier === 'premium_plus' ? 'Premium+' : tier === 'premium' ? 'Premium' : 'Standard'} !`);
         navigate('profile');
-      } else {
-        toast.error(data.error);
-      }
-    } catch { toast.error('Erreur lors de l\'abonnement'); }
+      } else toast.error(data.error);
+    } catch { toast.error('Erreur'); }
     finally { setSubscribing(null); }
   };
 
   return (
     <div className="min-h-screen pb-20 px-4">
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b py-3 -mx-4 px-4">
+      <div className="sticky top-0 z-20 glass border-b border-border/50 py-3 -mx-4 px-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('home')}><ArrowLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate('home')}><ArrowLeft className="w-5 h-5" /></Button>
           <div>
-            <h1 className="text-lg font-bold">Abonnements</h1>
-            <p className="text-xs text-muted-foreground">Choisissez le plan qui vous convient</p>
+            <h1 className="text-[16px] font-bold tracking-tight">Abonnements</h1>
+            <p className="text-[11px] text-muted-foreground">Choisissez votre plan</p>
           </div>
         </div>
       </div>
 
-      {/* Boost Banner */}
-      <Card className="mt-4 border-amber-200 bg-amber-50">
-        <CardContent className="p-4 flex items-center gap-3">
-          <Zap className="w-8 h-8 text-amber-500 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="font-semibold text-sm text-amber-900">Boostez vos annonces à la carte</p>
-            <p className="text-xs text-amber-700">1 000 FCFA = 2 jours en tête de liste + badge "Sponsorisé"</p>
+      {/* Boost banner */}
+      <Card className="mt-4 border-0 shadow-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-4 flex items-center gap-3 bg-amber-50/80">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-amber-600" fill="currentColor" />
           </div>
-          <Button size="sm" variant="outline" className="border-amber-300 text-amber-700" onClick={() => navigate('my-listings')}>
-            Booster
-          </Button>
+          <div className="flex-1">
+            <p className="font-semibold text-[13px]">Boost à la carte</p>
+            <p className="text-[11px] text-muted-foreground">1 000 FCFA = 48h en tête de liste</p>
+          </div>
+          <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 h-8 rounded-lg text-[12px]" onClick={() => navigate('my-listings')}>Booster</Button>
         </CardContent>
       </Card>
 
       {/* Plans */}
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-3">
         {PLANS.map((plan) => {
           const isCurrent = user?.subscriptionTier === plan.tier;
           return (
-            <Card key={plan.tier} className={`${plan.color} ${plan.popular ? 'ring-2 ring-terracotta relative' : ''} overflow-hidden`}>
+            <Card key={plan.tier} className={`${plan.color} ${plan.popular ? 'ring-2 ring-terracotta shadow-premium' : 'shadow-sm'} rounded-2xl overflow-hidden border-0 relative`}>
               {plan.popular && (
                 <div className="absolute top-0 right-0">
-                  <Badge className="rounded-none rounded-bl-lg gradient-majaay text-white text-[10px]">Populaire</Badge>
+                  <Badge className="rounded-none rounded-bl-xl gradient-majaay text-white text-[10px] font-medium px-3 py-1 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Populaire
+                  </Badge>
                 </div>
               )}
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{plan.icon}</span>
-                  <div>
-                    <CardTitle className="text-lg">{plan.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center"><plan.Icon /></div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-[16px]">{plan.name}</h3>
+                    <p className="text-[13px] text-muted-foreground">
                       {plan.price === 0 ? 'Gratuit' : `${new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA/mois`}
                     </p>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pb-4">
-                <ul className="space-y-2">
+                <ul className="space-y-2.5 mb-4">
                   {plan.features.map((f, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      {f.included ? <Check className="w-4 h-4 text-accent flex-shrink-0" /> : <X className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />}
-                      <span className={f.included ? '' : 'text-muted-foreground/60'}>{f.text}</span>
+                    <li key={i} className="flex items-center gap-2.5 text-[13px]">
+                      {f.ok ? (
+                        <div className="w-5 h-5 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0"><Check className="w-3 h-3 text-accent" strokeWidth={3} /></div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><X className="w-3 h-3 text-muted-foreground/30" /></div>
+                      )}
+                      <span className={f.ok ? '' : 'text-muted-foreground/50'}>{f.text}</span>
                     </li>
                   ))}
                 </ul>
-                <Button
-                  className={`w-full mt-4 h-11 ${isCurrent ? 'bg-muted text-muted-foreground' : plan.tier === 'free' ? '' : 'gradient-majaay text-white'} font-semibold`}
-                  variant={plan.tier === 'free' ? 'outline' : 'default'}
-                  disabled={isCurrent || (subscribing === plan.tier)}
-                  onClick={() => handleSubscribe(plan.tier, plan.price)}
-                >
-                  {isCurrent ? 'Plan actuel' : plan.price === 0 ? 'Plan actuel' : subscribing === plan.tier ? 'Chargement...' : `S\'abonner - ${new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA`}
+                <Button className={`w-full h-11 rounded-xl font-semibold text-[14px] ${
+                  isCurrent ? 'bg-muted text-muted-foreground' : plan.tier === 'free' ? 'border' : 'gradient-majaay text-white shadow-md shadow-terracotta/20'
+                }`} variant={plan.tier === 'free' ? 'outline' : 'default'}
+                  disabled={isCurrent || subscribing === plan.tier}
+                  onClick={() => handleSubscribe(plan.tier, plan.price)}>
+                  {isCurrent ? 'Plan actuel' : plan.price === 0 ? 'Plan actuel' : subscribing === plan.tier ? 'Chargement...' : `S'abonner — ${new Intl.NumberFormat('fr-FR').format(plan.price)} F`}
                 </Button>
               </CardContent>
             </Card>
@@ -183,8 +162,8 @@ export function PlansPage() {
         })}
       </div>
 
-      <p className="text-[11px] text-center text-muted-foreground mt-6 mb-4">
-        Paiement par mobile money : Wave, Orange Money, Free Money. En démo, le paiement est simulé.
+      <p className="text-[11px] text-center text-muted-foreground mt-5 mb-4">
+        Paiement : Wave, Orange Money, Free Money
       </p>
     </div>
   );
