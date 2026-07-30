@@ -1,5 +1,6 @@
 // Ma Jaay - Service SMS OTP
-// Supporte Termii (Afrique) et fallback demo
+// Utilise l'endpoint OTP dédié de Termii (channel: "otp")
+// Template: "Your {{Company Name}} verification code is {{OTP}}. This code expires in 10 minutes. Do not share with anyone."
 
 import { db } from './db';
 
@@ -16,27 +17,33 @@ export function generateOtp(): string {
 }
 
 /**
- * Envoie un SMS via Termii (gateway africaine - Sénégal, Mali, Côte d'Ivoire...)
- * Inscription: https://termii.com — crédits gratuits pour tester
+ * Envoie un OTP via Termii (endpoint dédié otp/send)
+ * - channel: "otp" (moins cher, fiable, optimisé pour les codes)
+ * - Le template est configuré côté Termii dashboard
+ * - pin_type: "NUMERIC" pour générer côté Termii aussi (backup)
  */
-export async function sendSmsTermii(phone: string, message: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendOtpTermii(phone: string, code: string): Promise<{ ok: boolean; error?: string }> {
   if (!TERMII_API_KEY) {
     return { ok: false, error: 'TERMII_API_KEY non configuré' };
   }
 
   try {
-    const res = await fetch('https://api.termii.com/api/sms/send', {
+    const res = await fetch('https://api.termii.com/api/sms/otp/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${TERMII_API_KEY}`,
       },
       body: JSON.stringify({
+        api_key: TERMII_API_KEY,
         to: phone,
         from: SMS_SENDER,
-        sms: message,
-        type: 'plain',
-        channel: 'generic',
+        pin_type: 'NUMERIC',
+        pin_attempts: 3,
+        pin_time_to_live: 5,       // 5 minutes
+        pin_length: 6,
+        pin_placeholder: '{{OTP}}',
+        message_text: `Your Ma Jaay verification code is {{OTP}}. This code expires in 5 minutes. Do not share with anyone.`,
+        channel: 'otp',
       }),
     });
 
@@ -51,22 +58,22 @@ export async function sendSmsTermii(phone: string, message: string): Promise<{ o
 }
 
 /**
- * Envoie un SMS via le provider configuré
- * Si aucun provider n'est configuré, le code est retourné en mode dev
+ * Envoie l'OTP au numéro donné
+ * Si Termii est configuré → envoi SMS réel via channel otp
+ * Sinon → mode démo, le code est retourné au frontend
  */
 export async function sendOtpSms(phone: string, code: string): Promise<{ ok: boolean; code?: string; error?: string }> {
-  const message = `Votre code Ma Jaay est ${code}. Ne le partagez pas. Expire dans 5 min.`;
-
   if (isSmsConfigured) {
-    const result = await sendSmsTermii(phone, message);
+    const result = await sendOtpTermii(phone, code);
     if (result.ok) {
       return { ok: true };
     }
     console.error('SMS Termii failed:', result.error);
-    return { ok: true, code, error: 'SMS non envoyé (fallback mode)' };
+    // Fallback: renvoyer le code côté frontend en cas d'échec
+    return { ok: true, code, error: result.error };
   }
 
-  // Pas de provider → mode démo : le code est renvoyé au frontend
+  // Pas de provider → mode démo
   return { ok: true, code };
 }
 
@@ -77,18 +84,18 @@ export async function createAndSendOtp(phone: string, purpose: string = 'auth') 
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-  // Invalider les anciens codes pour ce numéro
+  // Invalider les anciens codes
   await db.otpCode.updateMany({
     where: { phone, verified: false },
     data: { verified: true },
   });
 
-  // Stocker le nouveau code
+  // Stocker
   await db.otpCode.create({
     data: { phone, code, purpose, expiresAt },
   });
 
-  // Envoyer le SMS
+  // Envoyer
   const smsResult = await sendOtpSms(phone, code);
 
   return {
