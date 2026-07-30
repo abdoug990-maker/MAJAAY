@@ -401,18 +401,17 @@ function ReportsTab() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch('/api/admin?type=reports');
-        const d = await r.json();
-        if (!cancelled) setReports(d.reports || []);
-      } catch { toast.error('Erreur'); }
-      if (!cancelled) setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const loadReports = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/admin?type=reports');
+      const d = await r.json();
+      setReports(d.reports || []);
+    } catch { toast.error('Erreur'); }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadReports(); }, []);
 
   const resolve = async (id: string) => {
     try {
