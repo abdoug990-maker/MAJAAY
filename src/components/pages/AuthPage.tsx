@@ -108,9 +108,7 @@ export function AuthPage() {
         </Button>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-majaay flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">MJ</span>
-          </div>
+          <img src="/logo.png" alt="Ma Jaay" className="w-14 h-14 mx-auto mb-4" />
           <h1 className="text-2xl font-bold">Bienvenue sur Ma Jaay</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {step === 'otp'
