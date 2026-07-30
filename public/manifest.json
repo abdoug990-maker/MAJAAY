@@ -1,0 +1,40 @@
+{
+  "name": "Ma Jaay - Petites Annonces Sénégal",
+  "short_name": "Ma Jaay",
+  "description": "La marketplace #1 au Sénégal. Achetez et vendez près de chez vous.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFAF5",
+  "theme_color": "#C4652E",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "fr",
+  "categories": ["shopping", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Publier une annonce",
+      "url": "/?action=publish",
+      "description": "Créer une nouvelle annonce"
+    },
+    {
+      "name": "Mes messages",
+      "url": "/?action=chat",
+      "description": "Voir les messages"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+// Ma Jaay - Marketplace SaaS pour le Sénégal
+// Schéma de base de données MVP
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===== UTILISATEURS =====
+model User {
+  id                   String    @id @default(cuid())
+  phone                String    @unique
+  name                 String?
+  email                String?
+  avatar               String?
+  role                 String    @default("user") // user, admin
+  subscriptionTier     String    @default("free") // free, standard, premium, premium_plus
+  subscriptionExpiresAt DateTime?
+  isVerified           Boolean   @default(false)
+  isVerifiedSeller     Boolean   @default(false)
+  verificationDoc      String?   // CNI/NINEA reference
+  bio                  String?
+  location             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  listings      Listing[]
+  sentMessages Message[]  @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  subscriptions Subscription[]
+  boosts       BoostPurchase[]
+  reports      Report[]     @relation("Reporter")
+  reviewsGiven Review[]     @relation("Reviewer")
+  reviewsReceived Review[]  @relation("Reviewee")
+}
+
+// ===== CATÉGORIES =====
+model Category {
+  id       String  @id @default(cuid())
+  name     String
+  nameWolof String?
+  slug     String  @unique
+  icon     String  // Lucide icon name
+  order    Int     @default(0)
+  parentId String?
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+
+  listings  Listing[]
+}
+
+// ===== ANNONCES =====
+model Listing {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  price       Int?     // Prix en FCFA
+  negotiable  Boolean  @default(true)
+  condition   String   @default("usage") // neuf, usage, reconditionne
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  location    String?
+  city        String   @default("Dakar")
+  latitude    Float?
+  longitude   Float?
+  images      String   @default("[]") // JSON array of image URLs
+  status      String   @default("active") // active, sold, expired, moderated
+  isBoosted   Boolean  @default(false)
+  boostExpiresAt DateTime?
+  views       Int      @default(0)
+  contactCount Int     @default(0)
+  featured    Boolean  @default(false)
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime? // Auto-expire after 30 days
+
+  messages  Message[]
+  reports  Report[]
+  reviews  Review[]
+  boosts   BoostPurchase[]
+}
+
+// ===== MESSAGES =====
+model Message {
+  id        String   @id @default(cuid())
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String
+  receiver  User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ===== ABONNEMENTS =====
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tier      String   // standard, premium, premium_plus
+  amount    Int      // Prix en FCFA
+  status    String   @default("active") // active, expired, cancelled
+  startsAt  DateTime @default(now())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  paymentRef String? // Référence paiement mobile money
+}
+
+// ===== BOOSTS =====
+model BoostPurchase {
+  id        String    @id @default(cuid())
+  listingId String
+  listing   Listing   @relation(fields: [listingId], references: [id])
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  durationHours Int    @default(48)
+  amount    Int       // Prix en FCFA
+  status    String    @default("active") // active, expired
+  startsAt  DateTime  @default(now())
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  paymentRef String?
+}
+
+// ===== SIGNALEMENTS =====
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation("Reporter", fields: [reporterId], references: [id])
+  listingId  String?
+  listing    Listing? @relation(fields: [listingId], references: [id])
+  reason     String
+  status     String   @default("pending") // pending, reviewed, resolved
+  createdAt  DateTime @default(now())
+}
+
+// ===== AVIS =====
+model Review {
+  id         String   @id @default(cuid())
+  reviewerId String
+  reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId String
+  reviewee   User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  listingId  String?
+  listing    Listing? @relation(fields: [listingId], references: [id])
+  rating     Int      // 1-5
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+// ===== CONFIGURATION =====
+model AppSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
