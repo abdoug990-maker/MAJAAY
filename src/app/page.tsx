@@ -75,7 +75,7 @@ function PageRouter() {
     case 'profile': return <ProfilePage />;
     case 'my-listings': return <MyListingsPage />;
     case 'plans': return <PlansPage />;
-    case 'admin': case 'admin-listings': case 'admin-reports': return <AdminPage />;
+    case 'admin': case 'admin-listings': case 'admin-reports': case 'admin-users': return <AdminPage />;
     default: return <HomePage />;
   }
 }
