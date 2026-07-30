@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, LogOut, Crown, Shield, Settings, CreditCard, FileText, BarChart3, ShieldCheck, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 const TIER_LABELS: Record<string, { label: string; color: string; icon: string }> = {
   premium_plus: { label: 'Premium+', color: 'bg-gradient-to-r from-amber-400 to-amber-600 text-white', icon: '👑' },
@@ -20,7 +21,11 @@ export function ProfilePage() {
   const navigate = useRouterStore((s) => s.navigate);
   const { user, logout } = useAuthStore();
 
-  if (!user) { navigate('login'); return null; }
+  useEffect(() => {
+    if (!user) navigate('login');
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   const tier = TIER_LABELS[user.subscriptionTier] || TIER_LABELS.free;
 
