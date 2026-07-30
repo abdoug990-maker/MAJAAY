@@ -19,10 +19,10 @@ export function AuthPage() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [authMode, setAuthMode] = useState<'demo' | 'supabase' | null>(null);
+  const [authMode, setAuthMode] = useState<'demo' | 'sms' | null>(null);
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
 
-  // Timer pour renvoyer le code
   useEffect(() => {
     if (resendTimer <= 0) return;
     const timer = setTimeout(() => setResendTimer((t) => t - 1), 1000);
@@ -43,7 +43,9 @@ export function AuthPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setAuthMode(data.mode || 'demo');
+      setDevCode(data.devCode || null);
       setStep('otp');
+      setOtp('');
       startResendTimer();
     } catch (err: any) {
       setError(err.message);
@@ -64,6 +66,7 @@ export function AuthPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      setDevCode(data.devCode || null);
       startResendTimer();
     } catch (err: any) {
       setError(err.message);
@@ -100,12 +103,10 @@ export function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 pb-20 bg-background pattern-african">
       <div className="w-full max-w-sm">
-        {/* Back */}
         <Button variant="ghost" size="icon" className="mb-6" onClick={() => step === 'otp' ? setStep('phone') : navigate('home')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
 
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-majaay flex items-center justify-center">
             <span className="text-white text-2xl font-bold">MJ</span>
@@ -165,12 +166,11 @@ export function AuthPage() {
                   </Button>
                 </div>
 
-                {/* Demo accounts - uniquement en mode démo */}
-                {authMode !== 'supabase' && (
+                {authMode !== 'sms' && (
                   <div className="mt-4 p-3 bg-muted rounded-lg">
                     <p className="text-xs text-muted-foreground mb-2">
                       <MessageSquare className="w-3 h-3 inline mr-1" />
-                      Comptes démo (OTP : 1234)
+                      Comptes démo
                     </p>
                     <div className="space-y-1.5">
                       <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-7 font-normal" onClick={() => { setPhone('+221770000001'); setName('Aminata Diallo'); setIsLogin(true); }}>
@@ -188,13 +188,12 @@ export function AuthPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Status message selon le mode */}
                 <div className="text-center p-4 bg-muted rounded-lg">
                   <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-accent" />
                   <p className="text-sm text-muted-foreground">
-                    {authMode === 'supabase'
+                    {authMode === 'sms'
                       ? 'Code envoyé par SMS au'
-                      : 'Code de démonstration pour'}
+                      : 'Code envoyé au'}
                   </p>
                   <p className="text-lg font-bold mt-1">{phone}</p>
                 </div>
@@ -209,12 +208,12 @@ export function AuthPage() {
                     onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                     autoFocus
                   />
-                  {authMode === 'demo' && (
-                    <p className="text-[11px] text-muted-foreground text-center">
-                      Mode démo — utilisez le code : <span className="font-bold text-foreground">1234</span>
+                  {devCode && (
+                    <p className="text-[11px] text-amber-600 text-center bg-amber-50 rounded-md py-1.5">
+                      Mode développement — code : <span className="font-bold">{devCode}</span>
                     </p>
                   )}
-                  {authMode === 'supabase' && (
+                  {!devCode && authMode === 'sms' && (
                     <p className="text-[11px] text-muted-foreground text-center">
                       Saisissez le code reçu par SMS
                     </p>
@@ -226,7 +225,7 @@ export function AuthPage() {
                 <Button
                   className="w-full h-11 gradient-majaay text-white font-semibold"
                   onClick={handleVerifyOtp}
-                  disabled={loading || otp.length < 4}
+                  disabled={loading || otp.length < 6}
                 >
                   {loading ? 'Vérification...' : 'Vérifier et continuer'}
                 </Button>

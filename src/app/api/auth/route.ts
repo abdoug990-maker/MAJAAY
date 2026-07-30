@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { seedDatabase } from '@/lib/seed';
-import { isSupabaseConfigured, supabaseAdmin } from '@/lib/supabase-server';
+import { createAndSendOtp, verifyOtp, isSmsConfigured } from '@/lib/sms';
 
-// POST /api/auth - Authentification par téléphone + OTP
 export async function POST(request: NextRequest) {
   try {
     await seedDatabase();
@@ -11,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { phone, name, action } = body;
 
     if (!phone || !phone.match(/^\+221[0-9]{9}$/)) {
-      return NextResponse.json({ error: 'Numéro de téléphone invalide. Format: +221XXXXXXXXX' }, { status: 400 });
+      return NextResponse.json({ error: 'Numéro invalide. Format: +221XXXXXXXXX' }, { status: 400 });
     }
 
     // ===== ENVOI OTP =====
@@ -34,29 +33,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // --- Supabase SMS OTP ---
-      if (isSupabaseConfigured && supabaseAdmin) {
-        const { error } = await supabaseAdmin.auth.signInWithOtp({
-          phone,
-          channel: 'sms',
-        });
-        if (error) {
-          // Si l'utilisateur existe déjà dans Supabase, signInWithOtp marche quand même
-          // L'erreur la plus courante c'est la config SMS provider
-          console.error('Supabase SMS error:', error.message);
-          return NextResponse.json({ error: `Erreur d'envoi SMS : ${error.message}. Vérifiez la config du provider SMS dans Supabase.` }, { status: 500 });
-        }
-        return NextResponse.json({
-          message: 'Code OTP envoyé par SMS',
-          mode: 'supabase',
-        });
+      // Générer + envoyer l'OTP
+      const otpResult = await createAndSendOtp(phone);
+
+      if (!otpResult.sent) {
+        return NextResponse.json({ error: `Erreur d'envoi : ${otpResult.error}` }, { status: 500 });
       }
 
-      // --- Fallback démo (pas de Supabase configuré) ---
       return NextResponse.json({
-        message: 'Code OTP envoyé (démo : 1234)',
-        otp: '1234',
-        mode: 'demo',
+        message: isSmsConfigured
+          ? 'Code OTP envoyé par SMS'
+          : 'Code OTP envoyé',
+        devCode: otpResult.devCode, // null si SMS réel, le code si mode démo
+        mode: isSmsConfigured ? 'sms' : 'demo',
       });
     }
 
@@ -64,66 +53,29 @@ export async function POST(request: NextRequest) {
     if (action === 'verify-otp') {
       const { otp, name: regName } = body;
 
-      // --- Supabase verify ---
-      if (isSupabaseConfigured && supabaseAdmin) {
-        const { data: authData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
-          phone,
-          token: otp,
-          type: 'sms',
-        });
-
-        if (verifyError || !authData.user) {
-          return NextResponse.json({ error: 'Code OTP invalide ou expiré' }, { status: 400 });
-        }
-
-        const supabaseUserId = authData.user.id;
-        const accessToken = authData.session?.access_token || '';
-
-        // Synchroniser avec notre base locale Prisma
-        let user = await db.user.findUnique({ where: { phone } });
-        if (!user) {
-          user = await db.user.create({
-            data: {
-              phone,
-              name: regName || authData.user.user_metadata?.name || null,
-              isVerified: true,
-              supabaseUserId,
-            },
-          });
-        } else {
-          user = await db.user.update({
-            where: { phone },
-            data: { isVerified: true, supabaseUserId },
-          });
-        }
-
-        const { ...safeUser } = user;
-        return NextResponse.json({
-          user: safeUser,
-          token: accessToken,
-          mode: 'supabase',
-        });
+      const result = await verifyOtp(phone, otp);
+      if (!result.valid) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
       }
 
-      // --- Fallback démo ---
-      if (otp !== '1234') {
-        return NextResponse.json({ error: 'Code invalide' }, { status: 400 });
-      }
-
+      // Créer ou mettre à jour l'utilisateur
       let user = await db.user.findUnique({ where: { phone } });
       if (!user) {
         user = await db.user.create({
           data: { phone, name: regName || null, isVerified: true },
         });
       } else {
-        user = await db.user.update({ where: { phone }, data: { isVerified: true } });
+        user = await db.user.update({
+          where: { phone },
+          data: { isVerified: true },
+        });
       }
 
       const { ...safeUser } = user;
       return NextResponse.json({
         user: safeUser,
-        token: 'demo-session-' + user.id,
-        mode: 'demo',
+        token: 'session-' + user.id,
+        mode: isSmsConfigured ? 'sms' : 'demo',
       });
     }
 

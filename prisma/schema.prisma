@@ -163,3 +163,14 @@ model AppSetting {
   key   String @unique
   value String
 }
+
+// ===== CODES OTP =====
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  purpose   String   @default("auth") // auth, reset
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
