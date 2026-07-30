@@ -25,6 +25,7 @@ model User {
   verificationDoc      String?   // CNI/NINEA reference
   bio                  String?
   location             String?
+  supabaseUserId       String?   // ID utilisateur Supabase Auth
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
