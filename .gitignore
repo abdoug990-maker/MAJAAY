@@ -55,8 +55,8 @@ server.log
 # Skills directory
 /skills/
 
-# database files
-db/*.db
+# Netlify
+.netlify/
 
 # uploads
 upload/
