@@ -31,6 +31,7 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -100,6 +101,7 @@ export function AuthPage() {
         }),
       });
       await parseApiResponse(res);
+      window.localStorage.setItem('majaay-remember-me', String(rememberMe));
       setStep('sent');
       startResendTimer();
     } catch (err: any) {
@@ -149,6 +151,10 @@ export function AuthPage() {
                   <p className="text-[11px] text-muted-foreground">Un lien de connexion sécurisé sera envoyé à cette adresse.</p>
                 </div>
                 {error && <p className="text-destructive text-sm">{error}</p>}
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="rounded accent-terracotta" />
+                  Rester connecté sur cet appareil
+                </label>
                 <Button className="w-full h-11 bg-gradient-to-r from-terracotta via-fuchsia-500 to-sky-500 text-white font-semibold shadow-md shadow-fuchsia-500/20 hover:brightness-105" onClick={sendMagicLink} disabled={loading || !canSubmit}>
                   {loading ? 'Envoi en cours...' : 'Recevoir le lien par e-mail'}
                 </Button>

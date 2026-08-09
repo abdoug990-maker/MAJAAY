@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { CITIES } from '@/lib/cities';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { CategoryIcon } from '@/lib/category-icons';
+import { getAuthHeaders } from '@/lib/client-auth';
 
 const CONDITIONS = [
   { value: 'neuf', label: 'Neuf' },
@@ -42,11 +43,21 @@ export function CreateListingPage() {
 
   const handleSubmit = async () => {
     if (!form.title || !form.categoryId) { toast.error('Titre et categorie requis'); return; }
+    const hasActivePaidSubscription = Boolean(
+      user && user.subscriptionTier !== 'free' && user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date(),
+    );
+    if (!hasActivePaidSubscription) {
+      toast.info('Choisissez un abonnement payant avant de publier.');
+      navigate('plans');
+      return;
+    }
     setLoading(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/listings', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, images: JSON.stringify(images), price: form.price ? parseInt(form.price) : null, sellerId: user!.id }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ ...form, images: JSON.stringify(images), price: form.price ? parseInt(form.price) : null }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -145,6 +156,9 @@ export function CreateListingPage() {
           onClick={handleSubmit} disabled={loading || !form.title || !form.categoryId}>
           {loading ? 'Publication...' : 'Publier l\'annonce'}
         </Button>
+        {(!user || user.subscriptionTier === 'free' || !user.subscriptionExpiresAt || new Date(user.subscriptionExpiresAt) <= new Date()) && (
+          <p className="text-center text-xs text-muted-foreground">Un abonnement payant approuvé est requis pour publier.</p>
+        )}
       </div>
     </div>
   );

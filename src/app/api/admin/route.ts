@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { forbidden, getAuthenticatedAppUser, isAdminUser, unauthorized } from '@/lib/auth-server';
 
 // GET /api/admin?type=stats|users|subscriptions|reports
 export async function GET(request: NextRequest) {
   try {
+    const appUser = await getAuthenticatedAppUser(request);
+    if (!appUser) return unauthorized();
+    if (!isAdminUser(appUser)) return forbidden();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'stats';
 
@@ -49,7 +53,7 @@ export async function GET(request: NextRequest) {
       const subs = await db.subscription.findMany({
         orderBy: { createdAt: 'desc' },
         take: 50,
-        include: { user: { select: { id: true, name: true, phone: true } } },
+        include: { user: { select: { id: true, name: true, email: true, phone: true } } },
       });
       return NextResponse.json({ subscriptions: subs });
     }
@@ -76,6 +80,9 @@ export async function GET(request: NextRequest) {
 // PUT /api/admin - Update user/subscription
 export async function PUT(request: NextRequest) {
   try {
+    const appUser = await getAuthenticatedAppUser(request);
+    if (!appUser) return unauthorized();
+    if (!isAdminUser(appUser)) return forbidden();
     const body = await request.json();
     const { type, userId, ...data } = body;
 
@@ -93,9 +100,28 @@ export async function PUT(request: NextRequest) {
     }
 
     if (type === 'update-subscription' && body.subscriptionId) {
-      const sub = await db.subscription.update({
-        where: { id: body.subscriptionId },
-        data: { status: data.status || 'cancelled' },
+      const current = await db.subscription.findUnique({ where: { id: body.subscriptionId } });
+      if (!current) return NextResponse.json({ error: 'Abonnement introuvable.' }, { status: 404 });
+      const nextStatus = data.status || 'cancelled';
+      const sub = await db.$transaction(async (tx) => {
+        const updated = await tx.subscription.update({
+          where: { id: body.subscriptionId },
+          data: { status: nextStatus, paymentRef: typeof data.paymentRef === 'string' ? data.paymentRef : current.paymentRef },
+        });
+        if (nextStatus === 'active') {
+          await tx.user.update({
+            where: { id: current.userId },
+            data: { subscriptionTier: current.tier, subscriptionExpiresAt: current.expiresAt },
+          });
+        }
+        if (nextStatus === 'cancelled') {
+          const active = await tx.subscription.findFirst({ where: { userId: current.userId, status: 'active', id: { not: current.id } }, orderBy: { expiresAt: 'desc' } });
+          await tx.user.update({
+            where: { id: current.userId },
+            data: active ? { subscriptionTier: active.tier, subscriptionExpiresAt: active.expiresAt } : { subscriptionTier: 'free', subscriptionExpiresAt: null },
+          });
+        }
+        return updated;
       });
       return NextResponse.json({ subscription: sub });
     }
@@ -109,6 +135,9 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin - Moderate listing or report
 export async function DELETE(request: NextRequest) {
   try {
+    const appUser = await getAuthenticatedAppUser(request);
+    if (!appUser) return unauthorized();
+    if (!isAdminUser(appUser)) return forbidden();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const id = searchParams.get('id');

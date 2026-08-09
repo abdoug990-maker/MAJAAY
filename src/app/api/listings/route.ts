@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getListings, createListing, getListingWithDetails, updateListing, deleteListing, incrementViews } from '@/lib/api';
+import { getAuthenticatedAppUser, unauthorized } from '@/lib/auth-server';
 
 // GET /api/listings - Fetch listings with filters
 export async function GET(request: NextRequest) {
@@ -26,14 +27,17 @@ export async function GET(request: NextRequest) {
 // POST /api/listings - Create listing
 export async function POST(request: NextRequest) {
   try {
+    const appUser = await getAuthenticatedAppUser(request);
+    if (!appUser) return unauthorized();
     const body = await request.json();
-    if (!body.title || !body.categoryId || !body.sellerId) {
-      return NextResponse.json({ error: 'Titre, catégorie et vendeur requis' }, { status: 400 });
+    if (!body.title || !body.categoryId) {
+      return NextResponse.json({ error: 'Titre et catégorie requis' }, { status: 400 });
     }
-    const listing = await createListing(body);
+    const listing = await createListing({ ...body, sellerId: appUser.id });
     return NextResponse.json(listing, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: error.message.includes('Limite') ? 403 : 500 });
+    const message = error.message || 'Erreur de publication.';
+    return NextResponse.json({ error: message }, { status: /abonnement|autorisé|Utilisateur introuvable/.test(message) ? 403 : 500 });
   }
 }
 

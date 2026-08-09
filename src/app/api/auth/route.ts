@@ -67,18 +67,25 @@ export async function POST(request: NextRequest) {
       }
 
       const sessionEmail = data.user.email.toLowerCase();
+      const isConfiguredAdmin = sessionEmail === 'abdoug660@gmail.com';
       const metadataName = typeof data.user.user_metadata?.full_name === 'string'
         ? data.user.user_metadata.full_name.trim()
         : '';
       const user = await db.user.upsert({
         where: { email: sessionEmail },
-        update: { isVerified: true, supabaseUserId: data.user.id, name: metadataName || undefined },
+        update: {
+          isVerified: true,
+          supabaseUserId: data.user.id,
+          name: metadataName || undefined,
+          ...(isConfiguredAdmin ? { role: 'admin' } : {}),
+        },
         create: {
           email: sessionEmail,
           phone: null,
           name: metadataName || sessionEmail.split('@')[0],
           isVerified: true,
           supabaseUserId: data.user.id,
+          role: isConfiguredAdmin ? 'admin' : 'user',
         },
       });
 

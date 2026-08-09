@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Check, Zap, Star, Crown, X, Gem, Medal, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import React from 'react';
+import { getAuthHeaders } from '@/lib/client-auth';
 
 const PLANS = [
   {
@@ -72,20 +73,22 @@ export function PlansPage() {
 
   const handleSubscribe = async (tier: string, price: number) => {
     if (!user) { navigate('login'); return; }
-    if (price === 0) { toast.info('Vous êtes sur le plan gratuit'); return; }
+    if (price === 0) { toast.info('Le plan gratuit ne permet pas de publier.'); return; }
     setSubscribing(tier);
     try {
-      const res = await fetch('/api/subscriptions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, tier }) });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ tier }),
+      });
       const data = await res.json();
-      if (res.ok) {
-        const checkRes = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'check', userId: user.id }) });
-        const checkData = await checkRes.json();
-        if (checkData.user) useAuthStore.getState().setUser(checkData.user);
-        toast.success(`Bienvenue ${tier === 'premium_plus' ? 'Premium+' : tier === 'premium' ? 'Premium' : 'Standard'} !`);
-        navigate('profile');
-      } else toast.error(data.error);
-    } catch { toast.error('Erreur'); }
-    finally { setSubscribing(null); }
+      if (!res.ok) throw new Error(data.error || 'Impossible de créer la demande.');
+      if (data.waveUrl) window.open(data.waveUrl, '_blank', 'noopener,noreferrer');
+      toast.success('Paiement Wave ouvert. Après paiement, l’administrateur validera votre abonnement.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur');
+    } finally { setSubscribing(null); }
   };
 
   return (
@@ -163,7 +166,7 @@ export function PlansPage() {
       </div>
 
       <p className="text-[11px] text-center text-muted-foreground mt-5 mb-4">
-        Paiement : Wave, Orange Money, Free Money
+        Paiement : Wave · Validation manuelle après paiement
       </p>
     </div>
   );

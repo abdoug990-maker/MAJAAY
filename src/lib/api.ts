@@ -101,15 +101,12 @@ export async function createListing(data: {
   sellerId: string;
   images?: string;
 }) {
-  const freePlanLimit = 3;
   const user = await db.user.findUnique({ where: { id: data.sellerId } });
-  if (user && user.subscriptionTier === 'free') {
-    const activeCount = await db.listing.count({
-      where: { sellerId: data.sellerId, status: 'active' },
-    });
-    if (activeCount >= freePlanLimit) {
-      throw new Error(`Limite atteinte (${freePlanLimit} annonces gratuites). Passez au plan Standard !`);
-    }
+  if (!user) throw new Error('Utilisateur introuvable.');
+  const hasActivePaidSubscription = user.subscriptionTier !== 'free'
+    && Boolean(user.subscriptionExpiresAt && user.subscriptionExpiresAt > new Date());
+  if (!hasActivePaidSubscription) {
+    throw new Error('Un abonnement payant approuvé est requis pour publier une annonce.');
   }
 
   return db.listing.create({

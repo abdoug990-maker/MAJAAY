@@ -13,6 +13,12 @@ import {
   MessageSquare, ShieldCheck, Zap, X, Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/client-auth';
+
+async function adminFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const authHeaders = await getAuthHeaders();
+  return fetch(input, { ...init, headers: { ...authHeaders, ...(init.headers || {}) } });
+}
 
 type Tab = 'dashboard' | 'users' | 'listings' | 'subscriptions' | 'reports';
 
@@ -35,7 +41,7 @@ export function AdminPage() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fetch('/api/admin?type=stats');
+        const r = await adminFetch('/api/admin?type=stats');
         const d = await r.json();
         if (!cancelled && d.stats) setStats(d.stats);
       } catch { /* */ }
@@ -164,7 +170,7 @@ function UsersTab() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fetch('/api/admin?type=users&limit=50');
+        const r = await adminFetch('/api/admin?type=users&limit=50');
         const d = await r.json();
         if (!cancelled) { setUsers(d.users || []); setTotal(d.total || 0); }
       } catch { toast.error('Erreur chargement'); }
@@ -178,7 +184,7 @@ function UsersTab() {
     setLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/admin?type=users&limit=50&search=${encodeURIComponent(search)}`);
+        const r = await adminFetch(`/api/admin?type=users&limit=50&search=${encodeURIComponent(search)}`);
         const d = await r.json();
         if (!cancelled) { setUsers(d.users || []); setTotal(d.total || 0); }
       } catch { toast.error('Erreur'); }
@@ -188,7 +194,7 @@ function UsersTab() {
 
   const updateUser = async (userId: string, data: any) => {
     try {
-      const r = await fetch('/api/admin', {
+      const r = await adminFetch('/api/admin', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'update-user', userId, ...data }),
       });
@@ -263,7 +269,7 @@ function ListingsTab() {
 
   const loadListings = async () => {
     try {
-      const r = await fetch('/api/listings?limit=50');
+      const r = await adminFetch('/api/listings?limit=50');
       const d = await r.json();
       setListings(d.listings || []);
     } catch { toast.error('Erreur'); }
@@ -274,7 +280,7 @@ function ListingsTab() {
 
   const moderate = async (id: string) => {
     try {
-      await fetch(`/api/admin?type=listing&id=${id}`, { method: 'DELETE' });
+      await adminFetch(`/api/admin?type=listing&id=${id}`, { method: 'DELETE' });
       toast.success('Annonce modérée');
       setListings(listings.filter((l) => l.id !== id));
     } catch { toast.error('Erreur'); }
@@ -282,7 +288,7 @@ function ListingsTab() {
 
   const toggleBoost = async (listing: any) => {
     try {
-      await fetch('/api/listings', {
+      await adminFetch('/api/listings', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: listing.id, data: { isBoosted: !listing.isBoosted, boostExpiresAt: !listing.isBoosted ? new Date(Date.now() + 48 * 3600000).toISOString() : null } }),
       });
@@ -341,14 +347,27 @@ function SubscriptionsTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?type=subscriptions')
+    adminFetch('/api/admin?type=subscriptions')
       .then((r) => r.json()).then((d) => { setSubs(d.subscriptions || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
+  const updateSub = async (id: string, status: string) => {
+    try {
+      const r = await adminFetch('/api/admin', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'update-subscription', subscriptionId: id, status }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Erreur');
+      toast.success(status === 'active' ? 'Abonnement approuvé' : 'Abonnement refusé');
+      setSubs(subs.map((s) => s.id === id ? { ...s, status } : s));
+    } catch (error: any) { toast.error(error.message || 'Erreur'); }
+  };
+
   const cancelSub = async (id: string) => {
     try {
-      await fetch('/api/admin', {
+      await adminFetch('/api/admin', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'update-subscription', subscriptionId: id, status: 'cancelled' }),
       });
@@ -382,9 +401,17 @@ function SubscriptionsTab() {
                     </p>
                     {s.paymentRef && <p className="text-[10px] text-muted-foreground mt-0.5">Réf: {s.paymentRef}</p>}
                   </div>
-                  {s.status === 'active' && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => cancelSub(s.id)}><X className="w-4 h-4" /></Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {s.status === 'pending' && (
+                      <>
+                        <Button variant="outline" size="sm" className="h-8 text-xs text-green-700 border-green-300" onClick={() => updateSub(s.id, 'active')}><CheckCircle2 className="w-3 h-3 mr-1" /> Approuver</Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => updateSub(s.id, 'cancelled')}><X className="w-4 h-4" /></Button>
+                      </>
+                    )}
+                    {s.status === 'active' && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => cancelSub(s.id)}><X className="w-4 h-4" /></Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -404,7 +431,7 @@ function ReportsTab() {
   const loadReports = async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/admin?type=reports');
+      const r = await adminFetch('/api/admin?type=reports');
       const d = await r.json();
       setReports(d.reports || []);
     } catch { toast.error('Erreur'); }
@@ -415,7 +442,7 @@ function ReportsTab() {
 
   const resolve = async (id: string) => {
     try {
-      await fetch(`/api/admin?type=report&id=${id}`, { method: 'DELETE' });
+      await adminFetch(`/api/admin?type=report&id=${id}`, { method: 'DELETE' });
       toast.success('Signalement traité');
       setReports(reports.filter((r) => r.id !== id));
     } catch { toast.error('Erreur'); }
