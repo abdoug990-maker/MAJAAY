@@ -1,97 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { seedDatabase } from '@/lib/seed';
-import { createAndSendOtp, verifyOtp, isSmsConfigured } from '@/lib/sms';
+import { isSupabaseConfigured, supabaseServer } from '@/lib/supabase-server';
+
+function normalizeEmail(value: unknown) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function errorResponse(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    await seedDatabase();
+    if (!isSupabaseConfigured || !supabaseServer) {
+      return errorResponse('L’authentification e-mail n’est pas configurée sur le serveur.', 503);
+    }
+
     const body = await request.json();
-    const { phone, name, action } = body;
+    const action = body?.action;
+    const email = normalizeEmail(body?.email);
 
-    if (!phone || !phone.match(/^\+221[0-9]{9}$/)) {
-      return NextResponse.json({ error: 'Numéro invalide. Format: +221XXXXXXXXX' }, { status: 400 });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return errorResponse('Adresse e-mail invalide.');
     }
 
-    // ===== ENVOI OTP =====
-    if (action === 'register' || action === 'login') {
-      if (action === 'register' && (!name || name.trim().length < 2)) {
-        return NextResponse.json({ error: 'Le nom est requis (min. 2 caractères)' }, { status: 400 });
+    if (action === 'send-email-otp') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const isLogin = body.mode === 'login';
+      const existing = await db.user.findUnique({ where: { email } });
+
+      if (isLogin && !existing) {
+        return errorResponse('Aucun compte associé à cette adresse e-mail. Inscrivez-vous d’abord.', 404);
+      }
+      if (!isLogin && (!name || name.length < 2)) {
+        return errorResponse('Le nom est requis (minimum 2 caractères).');
+      }
+      if (!isLogin && existing) {
+        return errorResponse('Cette adresse e-mail est déjà inscrite. Connectez-vous.', 409);
       }
 
-      if (action === 'register') {
-        const existing = await db.user.findUnique({ where: { phone } });
-        if (existing) {
-          return NextResponse.json({ error: 'Ce numéro est déjà inscrit. Connectez-vous.' }, { status: 409 });
-        }
+      const { error } = await supabaseServer.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: !isLogin,
+          data: name ? { full_name: name } : undefined,
+        },
+      });
+
+      if (error) {
+        console.error('Supabase OTP send error:', error);
+        return errorResponse(error.message || 'Impossible d’envoyer le code e-mail.', 502);
       }
 
-      if (action === 'login') {
-        const user = await db.user.findUnique({ where: { phone } });
-        if (!user) {
-          return NextResponse.json({ error: 'Numéro non trouvé. Inscrivez-vous d\'abord.' }, { status: 404 });
-        }
+      return NextResponse.json({ message: 'Code de vérification envoyé par e-mail.' });
+    }
+
+    if (action === 'verify-email-otp') {
+      const token = typeof body.otp === 'string' ? body.otp.trim() : '';
+      if (!/^\d{6}$/.test(token)) return errorResponse('Le code doit contenir 6 chiffres.');
+
+      const { data, error } = await supabaseServer.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+      });
+
+      if (error || !data.user) {
+        return errorResponse(error?.message || 'Code invalide ou expiré.', 401);
       }
 
-      // Générer + envoyer l'OTP
-      const otpResult = await createAndSendOtp(phone);
+      const nameFromMetadata = typeof data.user.user_metadata?.full_name === 'string'
+        ? data.user.user_metadata.full_name
+        : null;
+      const requestedName = typeof body.name === 'string' ? body.name.trim() : '';
 
-      if (!otpResult.sent) {
-        return NextResponse.json({ error: `Erreur d'envoi : ${otpResult.error}` }, { status: 500 });
-      }
+      const user = await db.user.upsert({
+        where: { email },
+        update: {
+          isVerified: true,
+          name: requestedName || nameFromMetadata || undefined,
+          supabaseUserId: data.user.id,
+        },
+        create: {
+          email,
+          phone: null,
+          name: requestedName || nameFromMetadata,
+          isVerified: true,
+          supabaseUserId: data.user.id,
+        },
+      });
 
       return NextResponse.json({
-        message: isSmsConfigured
-          ? 'Code OTP envoyé par SMS'
-          : 'Code OTP envoyé',
-        devCode: otpResult.devCode, // null si SMS réel, le code si mode démo
-        mode: isSmsConfigured ? 'sms' : 'demo',
+        user,
+        token: data.session?.access_token || `supabase-${data.user.id}`,
       });
     }
 
-    // ===== VÉRIFICATION OTP =====
-    if (action === 'verify-otp') {
-      const { otp, name: regName } = body;
-
-      const result = await verifyOtp(phone, otp);
-      if (!result.valid) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
-      }
-
-      // Créer ou mettre à jour l'utilisateur
-      let user = await db.user.findUnique({ where: { phone } });
-      if (!user) {
-        user = await db.user.create({
-          data: { phone, name: regName || null, isVerified: true },
-        });
-      } else {
-        user = await db.user.update({
-          where: { phone },
-          data: { isVerified: true },
-        });
-      }
-
-      const { ...safeUser } = user;
-      return NextResponse.json({
-        user: safeUser,
-        token: 'session-' + user.id,
-        mode: isSmsConfigured ? 'sms' : 'demo',
-      });
-    }
-
-    // ===== CHECK SESSION =====
     if (action === 'check') {
-      const userId = body.userId;
+      const userId = typeof body.userId === 'string' ? body.userId : '';
       if (!userId) return NextResponse.json({ user: null });
       const user = await db.user.findUnique({ where: { id: userId } });
-      if (!user) return NextResponse.json({ user: null });
-      const { ...safeUser } = user;
-      return NextResponse.json({ user: safeUser });
+      return NextResponse.json({ user: user || null });
     }
 
-    return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
+    return errorResponse('Action invalide.');
   } catch (error: any) {
     console.error('Auth error:', error);
-    return NextResponse.json({ error: error.message || 'Erreur serveur' }, { status: 500 });
+    return errorResponse(error?.message || 'Erreur serveur pendant l’authentification.', 500);
   }
 }

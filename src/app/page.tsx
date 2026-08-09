@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouterStore, PageRoute } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { HomePage } from '@/components/pages/HomePage';
@@ -85,14 +84,6 @@ export default function MaJaayApp() {
   const user = useAuthStore((s) => s.user);
 
   useChatSocket();
-
-  useEffect(() => {
-    fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'register', phone: '+221000000000', name: '_seed' }),
-    }).catch(() => {});
-  }, []);
 
   const hideBottomNav = page === 'login' || page === 'register' || page === 'verify-otp' || page === 'chat-conversation';
 
