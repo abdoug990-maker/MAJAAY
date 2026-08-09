@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
-import { CITIES } from '@/lib/seed';
+import { CITIES } from '@/lib/cities';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { CategoryIcon } from '@/lib/category-icons';
 
