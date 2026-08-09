@@ -30,11 +30,13 @@ export function HomePage() {
   const fetchData = useCallback(async () => {
     try {
       const [catRes, listRes] = await Promise.all([fetch('/api/categories'), fetch('/api/listings?limit=10')]);
-      const cats = await catRes.json();
-      const listData = await listRes.json();
+      const catsPayload = await catRes.json().catch(() => []);
+      const listPayload = await listRes.json().catch(() => ({}));
+      const cats = Array.isArray(catsPayload) ? catsPayload : [];
+      const safeListings = Array.isArray(listPayload?.listings) ? listPayload.listings : [];
       setCategories(cats);
-      setListings(listData.listings || []);
-      setFeaturedListings((listData.listings || []).filter((l: any) => l.featured || l.isBoosted));
+      setListings(safeListings);
+      setFeaturedListings(safeListings.filter((l: any) => l.featured || l.isBoosted));
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, []);

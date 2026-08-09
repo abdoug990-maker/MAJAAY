@@ -27,7 +27,7 @@ function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50 safe-area-bottom md:hidden">
       <div className="max-w-lg mx-auto flex items-center justify-around h-[60px] px-1">
         {items.map((item) => {
           const isActive = page === item.page ||
@@ -63,6 +63,39 @@ function BottomNav() {
   );
 }
 
+function DesktopNav() {
+  const { page, navigate } = useRouterStore();
+  const items = [
+    { page: 'home' as PageRoute, icon: Home, label: 'Accueil' },
+    { page: 'search' as PageRoute, icon: Search, label: 'Rechercher' },
+    { page: 'create-listing' as PageRoute, icon: PlusCircle, label: 'Publier' },
+    { page: 'chat' as PageRoute, icon: MessageCircle, label: 'Messages' },
+    { page: 'profile' as PageRoute, icon: User, label: 'Profil' },
+  ];
+
+  return (
+    <header className="hidden md:block sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-8">
+        <button onClick={() => navigate('home')} className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+          <span className="grid h-9 w-9 place-items-center rounded-xl gradient-majaay text-white shadow-sm">M</span>
+          <span>Ma Jaay</span>
+        </button>
+        <nav className="flex items-center gap-1">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans', 'admin'].includes(page));
+            return (
+              <button key={item.page} onClick={() => navigate(item.page)} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${active ? 'bg-terracotta/10 text-terracotta' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+                <Icon className="h-4 w-4" />{item.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
 function PageRouter() {
   const page = useRouterStore((s) => s.page);
   switch (page) {
@@ -88,11 +121,14 @@ export default function MaJaayApp() {
   const hideBottomNav = page === 'login' || page === 'register' || page === 'verify-otp' || page === 'chat-conversation';
 
   return (
-    <div className="max-w-lg mx-auto min-h-screen bg-background pattern-african">
-      <main className={hideBottomNav ? '' : 'pb-[60px]'}>
+    <div className="min-h-screen bg-background pattern-african">
+      <DesktopNav />
+      <div className="mx-auto min-h-screen w-full max-w-7xl md:px-8">
+      <main className={hideBottomNav ? '' : 'pb-[60px] md:pb-8'}>
         <PageRouter />
       </main>
       {!hideBottomNav && <BottomNav />}
+      </div>
     </div>
   );
 }

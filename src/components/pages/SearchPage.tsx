@@ -28,7 +28,7 @@ export function SearchPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/categories').then((r) => r.json()).then((d) => { if (!cancelled) setCategories(d); }).catch(() => {});
+    fetch('/api/categories').then((r) => r.json()).then((d) => { if (!cancelled) setCategories(Array.isArray(d) ? d : []); }).catch(() => { if (!cancelled) setCategories([]); });
     return () => { cancelled = true; };
   }, []);
 
@@ -45,8 +45,9 @@ export function SearchPage() {
         if (sortBy) sp.set('sortBy', sortBy);
         sp.set('limit', '50');
         const res = await fetch(`/api/listings?${sp}`);
-        const data = await res.json();
-        if (!cancelled) { setListings(data.listings || []); setTotal(data.total || 0); }
+        const data = await res.json().catch(() => ({}));
+        const safeListings = Array.isArray(data?.listings) ? data.listings : [];
+        if (!cancelled) { setListings(safeListings); setTotal(typeof data?.total === 'number' ? data.total : 0); }
       } catch { /* */ }
       if (!cancelled) setLoading(false);
     };
