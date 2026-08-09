@@ -38,6 +38,16 @@ export function AuthPage() {
     return () => clearTimeout(timer);
   }, [resendTimer]);
 
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    if (hash.get('error_code') === 'otp_expired' || hash.get('error') === 'access_denied') {
+      setIsLogin(true);
+      setStep('phone');
+      setError('Le lien e-mail a expiré. Demandez un nouveau code à 6 chiffres.');
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
+
   const startResendTimer = () => setResendTimer(60);
 
   const handleSubmitPhone = async () => {
@@ -113,7 +123,7 @@ export function AuthPage() {
           <h1 className="text-2xl font-bold">Bienvenue sur Ma Jaay</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {step === 'otp'
-              ? 'Vérifiez votre numéro'
+              ? 'Vérifiez votre e-mail'
               : isLogin
                 ? 'Connectez-vous'
                 : 'Créez votre compte gratuitement'}
@@ -153,7 +163,7 @@ export function AuthPage() {
                 {error && <p className="text-destructive text-sm">{error}</p>}
 
                 <Button
-                  className="w-full h-11 gradient-majaay text-white font-semibold"
+                  className="w-full h-11 bg-gradient-to-r from-terracotta via-fuchsia-500 to-sky-500 text-white font-semibold shadow-md shadow-fuchsia-500/20 hover:brightness-105"
                   onClick={handleSubmitPhone}
                   disabled={loading || !canSubmit}
                 >
@@ -178,7 +188,7 @@ export function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Code OTP</Label>
+                  <Label>Code OTP à 6 chiffres</Label>
                   <Input
                     placeholder="Entrez le code à 6 chiffres"
                     className="h-14 text-center text-2xl tracking-[0.3em] font-mono"
@@ -188,14 +198,14 @@ export function AuthPage() {
                     autoFocus
                   />
                   <p className="text-[11px] text-muted-foreground text-center">
-                    Saisissez le code reçu dans votre boîte e-mail.
+                    Saisissez le code reçu dans votre boîte e-mail. Aucun lien n’est nécessaire.
                   </p>
                 </div>
 
                 {error && <p className="text-destructive text-sm">{error}</p>}
 
                 <Button
-                  className="w-full h-11 gradient-majaay text-white font-semibold"
+                  className="w-full h-11 bg-gradient-to-r from-terracotta via-fuchsia-500 to-sky-500 text-white font-semibold shadow-md shadow-fuchsia-500/20 hover:brightness-105"
                   onClick={handleVerifyOtp}
                   disabled={loading || otp.length < 6}
                 >
