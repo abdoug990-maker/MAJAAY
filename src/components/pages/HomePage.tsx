@@ -143,9 +143,9 @@ export function HomePage() {
         {/* Quick Actions */}
         <div className="flex gap-2.5 mb-8 overflow-x-auto no-scrollbar -mx-1 px-1">
           {[
-            { icon: Plus, label: 'Publier', page: 'create-listing', needsAuth: true, color: 'text-terracotta bg-terracotta/8' },
+            { icon: Plus, label: 'Publier', page: 'create-listing', needsAuth: false, color: 'text-terracotta bg-terracotta/8' },
             { icon: TrendingUp, label: 'Tendances', page: 'search', needsAuth: false, color: 'text-gold bg-gold/10' },
-            { icon: Crown, label: 'Premium', page: 'plans', needsAuth: true, color: 'text-accent bg-accent/8' },
+            { icon: Crown, label: 'Premium', page: 'plans', needsAuth: false, color: 'text-accent bg-accent/8' },
           ].map((a) => (
             <button key={a.page} onClick={() => (!a.needsAuth || user) ? navigate(a.page) : navigate('login')}
               className={`flex items-center gap-2 pl-3.5 pr-4 py-2.5 rounded-2xl font-medium text-[13px] shadow-sm border border-border/60 hover:shadow-card-hover transition-all duration-200 whitespace-nowrap ${a.color}`}>

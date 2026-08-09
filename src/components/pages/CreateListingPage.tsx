@@ -37,8 +37,6 @@ export function CreateListingPage() {
   useEffect(() => {
     fetch('/api/categories').then((r) => r.json()).then(setCategories);
   }, []);
-  useEffect(() => { if (!user) navigate('login'); }, [user]);
-
   const filteredCities = CITIES.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase()));
 
   const handleSubmit = async () => {

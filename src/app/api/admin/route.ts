@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { forbidden, getAuthenticatedAppUser, isAdminUser, unauthorized } from '@/lib/auth-server';
+import { unauthorized } from '@/lib/auth-server';
+import { getAdminCookieName, verifyAdminToken } from '@/lib/admin-auth';
 
 // GET /api/admin?type=stats|users|subscriptions|reports
 export async function GET(request: NextRequest) {
   try {
-    const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return unauthorized();
-    if (!isAdminUser(appUser)) return forbidden();
+    const isAdmin = await verifyAdminToken(request.cookies.get(getAdminCookieName())?.value);
+    if (!isAdmin) return unauthorized();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'stats';
 
@@ -80,9 +80,8 @@ export async function GET(request: NextRequest) {
 // PUT /api/admin - Update user/subscription
 export async function PUT(request: NextRequest) {
   try {
-    const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return unauthorized();
-    if (!isAdminUser(appUser)) return forbidden();
+    const isAdmin = await verifyAdminToken(request.cookies.get(getAdminCookieName())?.value);
+    if (!isAdmin) return unauthorized();
     const body = await request.json();
     const { type, userId, ...data } = body;
 
@@ -135,9 +134,8 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin - Moderate listing or report
 export async function DELETE(request: NextRequest) {
   try {
-    const appUser = await getAuthenticatedAppUser(request);
-    if (!appUser) return unauthorized();
-    if (!isAdminUser(appUser)) return forbidden();
+    const isAdmin = await verifyAdminToken(request.cookies.get(getAdminCookieName())?.value);
+    if (!isAdmin) return unauthorized();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const id = searchParams.get('id');

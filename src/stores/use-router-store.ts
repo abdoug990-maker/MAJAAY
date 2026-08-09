@@ -5,6 +5,7 @@ export type PageRoute =
   | 'login'
   | 'register'
   | 'verify-otp'
+  | 'admin-login'
   | 'listing-detail'
   | 'create-listing'
   | 'edit-listing'

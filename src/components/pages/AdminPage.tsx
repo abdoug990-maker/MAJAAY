@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouterStore } from '@/stores/use-router-store';
-import { useAuthStore } from '@/stores/use-auth-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,16 +30,17 @@ const TIER_BADGE: Record<string, string> = {
 
 export function AdminPage() {
   const navigate = useRouterStore((s) => s.navigate);
-  const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') { navigate('home'); return; }
     let cancelled = false;
     (async () => {
       try {
+        const auth = await adminFetch('/api/admin-auth');
+        const authData = await auth.json();
+        if (!authData.authenticated) { navigate('admin-login'); return; }
         const r = await adminFetch('/api/admin?type=stats');
         const d = await r.json();
         if (!cancelled && d.stats) setStats(d.stats);
@@ -48,7 +48,7 @@ export function AdminPage() {
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [user, navigate]);
+  }, [navigate]);
 
   if (loading || !stats) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-terracotta border-t-transparent rounded-full" /></div>;

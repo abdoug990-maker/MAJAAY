@@ -12,6 +12,7 @@ import { ProfilePage } from '@/components/pages/ProfilePage';
 import { MyListingsPage } from '@/components/pages/MyListingsPage';
 import { PlansPage } from '@/components/pages/PlansPage';
 import { AdminPage } from '@/components/pages/AdminPage';
+import { AdminLoginPage } from '@/components/pages/AdminLoginPage';
 import { Home, Search, PlusCircle, MessageCircle, User } from 'lucide-react';
 import { useChatSocket } from '@/hooks/use-chat-socket';
 
@@ -90,9 +91,10 @@ function DesktopNav() {
               </button>
             );
           })}
-        </nav>
-      </div>
-    </header>
+          </nav>
+          <button onClick={() => navigate('admin-login')} className="ml-3 rounded-xl border border-border/70 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">Admin</button>
+        </div>
+      </header>
   );
 }
 
@@ -100,6 +102,7 @@ function PageRouter() {
   const page = useRouterStore((s) => s.page);
   switch (page) {
     case 'login': case 'register': case 'verify-otp': return <AuthPage />;
+    case 'admin-login': return <AdminLoginPage />;
     case 'listing-detail': return <ListingDetailPage />;
     case 'create-listing': case 'edit-listing': return <CreateListingPage />;
     case 'search': return <SearchPage />;
@@ -118,7 +121,7 @@ export default function MaJaayApp() {
 
   useChatSocket();
 
-  const hideBottomNav = page === 'login' || page === 'register' || page === 'verify-otp' || page === 'chat-conversation';
+  const hideBottomNav = page === 'login' || page === 'register' || page === 'verify-otp' || page === 'admin-login' || page === 'chat-conversation';
 
   return (
     <div className="min-h-screen bg-background pattern-african">
