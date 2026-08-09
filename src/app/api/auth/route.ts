@@ -39,10 +39,12 @@ export async function POST(request: NextRequest) {
         return errorResponse('Cette adresse e-mail est déjà inscrite. Connectez-vous.', 409);
       }
 
+      const origin = new URL(request.url).origin;
       const { error } = await supabaseServer.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: !isLogin,
+          emailRedirectTo: origin,
           data: name ? { full_name: name } : undefined,
         },
       });
@@ -52,7 +54,35 @@ export async function POST(request: NextRequest) {
         return errorResponse(error.message || 'Impossible d’envoyer le code e-mail.', 502);
       }
 
-      return NextResponse.json({ message: 'Code de vérification envoyé par e-mail.' });
+      return NextResponse.json({ message: 'Lien de connexion envoyé par e-mail.' });
+    }
+
+    if (action === 'sync-session') {
+      const accessToken = typeof body.accessToken === 'string' ? body.accessToken : '';
+      if (!accessToken) return errorResponse('Session e-mail manquante.', 401);
+
+      const { data, error } = await supabaseServer.auth.getUser(accessToken);
+      if (error || !data.user?.email) {
+        return errorResponse(error?.message || 'Session e-mail invalide ou expirée.', 401);
+      }
+
+      const sessionEmail = data.user.email.toLowerCase();
+      const metadataName = typeof data.user.user_metadata?.full_name === 'string'
+        ? data.user.user_metadata.full_name.trim()
+        : '';
+      const user = await db.user.upsert({
+        where: { email: sessionEmail },
+        update: { isVerified: true, supabaseUserId: data.user.id, name: metadataName || undefined },
+        create: {
+          email: sessionEmail,
+          phone: null,
+          name: metadataName || sessionEmail.split('@')[0],
+          isVerified: true,
+          supabaseUserId: data.user.id,
+        },
+      });
+
+      return NextResponse.json({ user, token: accessToken });
     }
 
     if (action === 'verify-email-otp') {
