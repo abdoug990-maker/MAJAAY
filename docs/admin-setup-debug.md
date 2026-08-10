@@ -1,0 +1,3 @@
+Après redéploiement Netlify 6a781ca176ec246f7c389858 en état ready, l’accueil public reste accessible sans connexion et le bouton Admin ouvre la configuration. Le secret temporaire est saisi, l’identifiant est abdoug660@gmail.com et le mot de passe demandé est saisi dans les deux champs, mais le clic sur « Créer le mot de passe admin » laisse l’écran en mode configuration sans message visible.
+
+GET /api/admin-auth répond {authenticated:false, configured:false}. La route POST setup compare MAJAAY_ADMIN_SETUP_TOKEN, puis utilise db.appSetting.findUnique/upsert. Il faut vérifier la réponse POST ou les logs Netlify. Le code hashPassword utilise scrypt et signe ensuite une session JWT admin indépendante.

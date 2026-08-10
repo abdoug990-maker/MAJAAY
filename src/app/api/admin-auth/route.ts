@@ -22,7 +22,7 @@ const cookieOptions = {
 export async function GET(request: NextRequest) {
   const valid = await verifyAdminToken(request.cookies.get(getAdminCookieName())?.value);
   const configured = Boolean(await getSetting('majaay_admin_password_hash'));
-  return NextResponse.json({ authenticated: valid, configured, username: valid ? getAdminUsername() : null });
+  return NextResponse.json({ authenticated: valid, configured, setupAvailable: Boolean(getAdminSetupToken()), username: valid ? getAdminUsername() : null });
 }
 
 export async function POST(request: NextRequest) {
