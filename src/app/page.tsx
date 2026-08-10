@@ -75,24 +75,24 @@ function DesktopNav() {
   ];
 
   return (
-    <header className="hidden md:block sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-8">
-        <button onClick={() => navigate('home')} className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-          <span className="grid h-9 w-9 place-items-center rounded-xl gradient-majaay text-white shadow-sm">M</span>
-          <span>Ma Jaay</span>
+    <header className="hidden md:block sticky top-0 z-40 border-b border-white/10 bg-[#131921] text-white shadow-lg">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-6 px-8">
+        <button onClick={() => navigate('home')} className="flex items-center gap-2 text-lg font-extrabold tracking-tight shrink-0">
+          <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#FF9900] text-[#131921] shadow-sm text-xl">M</span>
+          <span className="text-[20px]">Ma Jaay</span>
         </button>
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 flex-1 justify-center">
           {items.map((item) => {
             const Icon = item.icon;
             const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans', 'admin'].includes(page));
             return (
-              <button key={item.page} onClick={() => navigate(item.page)} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${active ? 'bg-terracotta/10 text-terracotta' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+              <button key={item.page} onClick={() => navigate(item.page)} className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${active ? 'bg-white/15 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}>
                 <Icon className="h-4 w-4" />{item.label}
               </button>
             );
           })}
           </nav>
-          <button onClick={() => navigate('admin-login')} className="ml-3 rounded-xl border border-border/70 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">Admin</button>
+          <button onClick={() => navigate('admin-login')} className="ml-auto rounded-md border border-white/40 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10">Admin</button>
         </div>
       </header>
   );

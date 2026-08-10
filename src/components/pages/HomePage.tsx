@@ -54,8 +54,8 @@ export function HomePage() {
     const firstImage = hasImages ? JSON.parse(listing.images)[0] : null;
     const tierBadge = getTierBadge(listing.seller?.subscriptionTier || 'free');
     return (
-      <Card key={listing.id}
-        className="cursor-pointer overflow-hidden group shadow-sm hover:shadow-card-hover transition-all duration-300 border-0"
+                  <Card key={listing.id}
+        className="cursor-pointer overflow-hidden group marketplace-card hover:shadow-card-hover transition-all duration-300"
         style={{ animationDelay: `${idx * 50}ms` }}
         onClick={() => navigate('listing-detail', { id: listing.id })}>
         <div className="relative aspect-[4/3] bg-muted overflow-hidden">
@@ -102,16 +102,16 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 marketplace-surface">
       {/* Hero Header */}
-      <div className="gradient-hero text-white px-5 pt-12 pb-10 -mx-4 -mt-4 relative overflow-hidden">
+      <div className="gradient-hero text-white px-5 pt-8 pb-9 md:px-10 md:pt-10 md:pb-12 md:rounded-b-2xl -mx-4 md:mx-0 -mt-4 md:mt-0 relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/[0.04] rounded-full" />
         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/[0.03] rounded-full" />
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-5 md:mb-7 max-w-7xl mx-auto">
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-[22px] font-extrabold tracking-tight">Ma Jaay</h1>
+                <h1 className="text-[24px] md:text-[30px] font-extrabold tracking-tight">Ma Jaay</h1>
                 <Sparkles className="w-4 h-4 text-gold" />
               </div>
               <p className="text-white/60 text-[13px] font-medium">Le marketplace du Senegal</p>
@@ -128,9 +128,9 @@ export function HomePage() {
               )}
             </div>
           </div>
-          <div className="relative">
+          <div className="relative max-w-5xl mx-auto amazon-search-ring rounded-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground/60" />
-            <Input placeholder="Rechercher une annonce..." className="pl-11 pr-12 h-[50px] rounded-2xl bg-white/[0.97] text-foreground shadow-premium border-0 text-[15px] placeholder:text-muted-foreground/50" value={search}
+                          <Input placeholder="Rechercher des produits, des services et des annonces..." className="pl-11 pr-12 h-[52px] md:h-[58px] rounded-xl bg-white/[0.98] text-foreground shadow-premium border-0 text-[14px] md:text-[16px] placeholder:text-muted-foreground/60" value={search}
               onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
             <Button size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-xl gradient-majaay shadow-sm hover:opacity-90" onClick={handleSearch}>
               <Search className="w-4 h-4 text-white" />
@@ -139,7 +139,7 @@ export function HomePage() {
         </div>
       </div>
 
-      <div className="px-4 mt-7">
+      <div className="px-4 md:px-0 mt-6 md:mt-8 max-w-7xl mx-auto">
         {/* Quick Actions */}
         <div className="flex gap-2.5 mb-8 overflow-x-auto no-scrollbar -mx-1 px-1">
           {[
@@ -163,7 +163,7 @@ export function HomePage() {
             </Button>
           </div>
           {loading ? (
-            <div className="grid grid-cols-4 gap-x-3 gap-y-4">
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-x-3 gap-y-4 md:gap-x-5 md:gap-y-5">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="flex flex-col items-center gap-2">
                   <Skeleton className="w-[60px] h-[60px] rounded-2xl" />
@@ -172,7 +172,7 @@ export function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-x-3 gap-y-4">
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-x-3 gap-y-4 md:gap-x-5 md:gap-y-5">
               {categories.map((cat: any) => (
                 <button key={cat.id} className="flex flex-col items-center gap-1.5 group animate-fade-up"
                   style={{ animationDelay: `${categories.indexOf(cat) * 40}ms` }}
@@ -239,14 +239,14 @@ export function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {listings.map((l, i) => renderListingCard(l, i))}
             </div>
           )}
         </div>
 
         {/* Trust Banner */}
-        <Card className="border-0 shadow-premium overflow-hidden mb-6">
+          <Card className="marketplace-card overflow-hidden mb-6">
           <div className="gradient-majaay-dark p-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="flex items-start gap-3.5 relative z-10">

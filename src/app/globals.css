@@ -49,41 +49,41 @@
 
 :root {
   --radius: 0.875rem;
-  --terracotta: #0D4D2F;
+  --terracotta: #131921;
   --terracotta-foreground: #FFFFFF;
-  --gold: #FFC107;
-  --gold-foreground: #FFFFFF;
-  --background: #FAFAF8;
-  --foreground: #1B1B1F;
+  --gold: #FF9900;
+  --gold-foreground: #131921;
+  --background: #EAeded;
+  --foreground: #17202A;
   --card: #FFFFFF;
-  --card-foreground: #1B1B1F;
+  --card-foreground: #17202A;
   --popover: #FFFFFF;
-  --popover-foreground: #1B1B1F;
-  --primary: #0D4D2F;
+  --popover-foreground: #17202A;
+  --primary: #131921;
   --primary-foreground: #FFFFFF;
-  --secondary: #FFF8E1;
-  --secondary-foreground: #0D4D2F;
-  --muted: #F5F5F5;
-  --muted-foreground: #6B7280;
-  --accent: #E53935;
-  --accent-foreground: #FFFFFF;
-  --destructive: #DC2626;
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #0D4D2F;
-  --chart-1: #0D4D2F;
-  --chart-2: #FFC107;
-  --chart-3: #E53935;
-  --chart-4: #FB8C00;
-  --chart-5: #0D4D2F;
+  --secondary: #F7F8F8;
+  --secondary-foreground: #131921;
+  --muted: #F3F3F3;
+  --muted-foreground: #5F6B76;
+  --accent: #FF9900;
+  --accent-foreground: #131921;
+  --destructive: #C7511F;
+  --border: #D5D9D9;
+  --input: #D5D9D9;
+  --ring: #FF9900;
+  --chart-1: #131921;
+  --chart-2: #FF9900;
+  --chart-3: #146EB4;
+  --chart-4: #067D62;
+  --chart-5: #E47911;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #1B1B1F;
-  --sidebar-primary: #0D4D2F;
+  --sidebar-foreground: #17202A;
+  --sidebar-primary: #131921;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FFF8E1;
-  --sidebar-accent-foreground: #0D4D2F;
-  --sidebar-border: #E5E7EB;
-  --sidebar-ring: #0D4D2F;
+  --sidebar-accent: #FFF3E0;
+  --sidebar-accent-foreground: #131921;
+  --sidebar-border: #D5D9D9;
+  --sidebar-ring: #FF9900;
 }
 
 .dark {
@@ -127,9 +127,9 @@
 
 @layer utilities {
   /* Premium gradients */
-  .gradient-majaay { background: linear-gradient(135deg, #0D4D2F 0%, #FFC107 50%, #E53935 100%); }
-  .gradient-majaay-dark { background: linear-gradient(160deg, #0D4D2F 0%, #1B4D3A 100%); }
-  .gradient-hero { background: linear-gradient(165deg, #0D4D2F 0%, #0A3D26 40%, #1B1B1F 100%); }
+  .gradient-majaay { background: linear-gradient(135deg, #131921 0%, #243447 52%, #FF9900 100%); }
+  .gradient-majaay-dark { background: linear-gradient(160deg, #131921 0%, #232F3E 100%); }
+  .gradient-hero { background: linear-gradient(165deg, #131921 0%, #232F3E 58%, #146EB4 100%); }
   .gradient-gold-shimmer {
     background: linear-gradient(135deg, #FFC107 0%, #FFE082 50%, #FFC107 100%);
     background-size: 200% 100%;
@@ -143,16 +143,19 @@
   /* Premium effects */
   .badge-boosted { animation: pulse-glow 2.5s ease-in-out infinite; }
   .pattern-african {
-    background-image: radial-gradient(circle at 20% 20%, rgba(13, 77, 47, 0.03) 0%, transparent 50%),
-                     radial-gradient(circle at 80% 80%, rgba(255, 193, 7, 0.03) 0%, transparent 50%);
+    background-image: radial-gradient(circle at 20% 20%, rgba(20, 110, 180, 0.035) 0%, transparent 50%),
+                     radial-gradient(circle at 80% 80%, rgba(255, 153, 0, 0.04) 0%, transparent 50%);
   }
+  .marketplace-card { border: 1px solid #D5D9D9; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08); }
+  .marketplace-card:hover { box-shadow: 0 5px 16px rgba(15, 23, 42, 0.16); transform: translateY(-1px); }
+  .amazon-search-ring:focus-within { box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.5); }
   .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
   .shadow-premium { box-shadow: 0 1px 3px rgba(27,27,31,0.04), 0 4px 12px rgba(27,27,31,0.06), 0 12px 28px rgba(27,27,31,0.04); }
   .shadow-card-hover { box-shadow: 0 4px 6px rgba(27,27,31,0.03), 0 12px 24px rgba(27,27,31,0.08); }
   .shadow-inner-soft { box-shadow: inset 0 1px 3px rgba(27,27,31,0.06); }
 
   /* Category icon containers */
-  .cat-icon { @apply w-[60px] h-[60px] rounded-2xl flex items-center justify-center transition-all duration-300; }
+  .cat-icon { @apply w-[60px] h-[60px] rounded-xl flex items-center justify-center transition-all duration-300; background: #F7F8F8; border: 1px solid #D5D9D9; }
   .cat-icon:hover { transform: translateY(-2px); }
 }
 
