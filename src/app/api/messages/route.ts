@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
           userId: other.id,
           userName: other.name,
           userAvatar: other.avatar,
+          userPhone: other.phone,
           listingId: message.listingId,
           listingImage: (() => { try { return message.listing?.images ? JSON.parse(message.listing.images)[0] : null; } catch { return null; } })(),
           listingPrice: message.listing?.price || null,
