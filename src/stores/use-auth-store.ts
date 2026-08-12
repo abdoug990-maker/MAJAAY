@@ -29,7 +29,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isLoading: false,
       setUser: (user) => set({ user }),
-      logout: () => set({ user: null }),
+      logout: () => {
+        void fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
+        set({ user: null });
+      },
     }),
     { name: 'majaay-auth' }
   )

@@ -49,41 +49,41 @@
 
 :root {
   --radius: 0.875rem;
-  --terracotta: #131921;
+  --terracotta: #006233;
   --terracotta-foreground: #FFFFFF;
-  --gold: #FF9900;
-  --gold-foreground: #131921;
-  --background: #EAeded;
+  --gold: #FDEF42;
+  --gold-foreground: #17202A;
+  --background: #F7F7F4;
   --foreground: #17202A;
   --card: #FFFFFF;
   --card-foreground: #17202A;
   --popover: #FFFFFF;
   --popover-foreground: #17202A;
-  --primary: #131921;
+  --primary: #00853F;
   --primary-foreground: #FFFFFF;
-  --secondary: #F7F8F8;
-  --secondary-foreground: #131921;
-  --muted: #F3F3F3;
+  --secondary: #FFFBE0;
+  --secondary-foreground: #006233;
+  --muted: #F1F3EF;
   --muted-foreground: #5F6B76;
-  --accent: #FF9900;
-  --accent-foreground: #131921;
-  --destructive: #C7511F;
-  --border: #D5D9D9;
-  --input: #D5D9D9;
-  --ring: #FF9900;
-  --chart-1: #131921;
-  --chart-2: #FF9900;
-  --chart-3: #146EB4;
-  --chart-4: #067D62;
-  --chart-5: #E47911;
+  --accent: #E31B23;
+  --accent-foreground: #FFFFFF;
+  --destructive: #B91C1C;
+  --border: #D8DED8;
+  --input: #D8DED8;
+  --ring: #FDEF42;
+  --chart-1: #00853F;
+  --chart-2: #FDEF42;
+  --chart-3: #E31B23;
+  --chart-4: #006233;
+  --chart-5: #F4C430;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #17202A;
-  --sidebar-primary: #131921;
+  --sidebar-primary: #00853F;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FFF3E0;
-  --sidebar-accent-foreground: #131921;
-  --sidebar-border: #D5D9D9;
-  --sidebar-ring: #FF9900;
+  --sidebar-accent: #FFFBE0;
+  --sidebar-accent-foreground: #006233;
+  --sidebar-border: #D8DED8;
+  --sidebar-ring: #FDEF42;
 }
 
 .dark {
@@ -127,9 +127,9 @@
 
 @layer utilities {
   /* Premium gradients */
-  .gradient-majaay { background: linear-gradient(135deg, #131921 0%, #243447 52%, #FF9900 100%); }
-  .gradient-majaay-dark { background: linear-gradient(160deg, #131921 0%, #232F3E 100%); }
-  .gradient-hero { background: linear-gradient(165deg, #131921 0%, #232F3E 58%, #146EB4 100%); }
+  .gradient-majaay { background: linear-gradient(135deg, #006233 0%, #00853F 55%, #E31B23 100%); }
+  .gradient-majaay-dark { background: linear-gradient(160deg, #006233 0%, #00853F 100%); }
+  .gradient-hero { background: linear-gradient(165deg, #006233 0%, #00853F 58%, #E31B23 100%); }
   .gradient-gold-shimmer {
     background: linear-gradient(135deg, #FFC107 0%, #FFE082 50%, #FFC107 100%);
     background-size: 200% 100%;

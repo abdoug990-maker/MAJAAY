@@ -17,6 +17,7 @@ model User {
   phone                String?   @unique
   name                 String?
   email                String?   @unique
+  passwordHash         String?
   avatar               String?
   role                 String    @default("user") // user, admin
   subscriptionTier     String    @default("free") // free, standard, premium, premium_plus

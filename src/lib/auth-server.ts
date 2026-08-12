@@ -1,25 +1,11 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { supabaseServer } from '@/lib/supabase-server';
+import { readSessionUserId } from '@/lib/password-auth';
 
 export async function getAuthenticatedAppUser(request: NextRequest) {
-  const authorization = request.headers.get('authorization') || '';
-  const accessToken = authorization.startsWith('Bearer ')
-    ? authorization.slice('Bearer '.length).trim()
-    : '';
-  if (!accessToken || !supabaseServer) return null;
-
-  const { data, error } = await supabaseServer.auth.getUser(accessToken);
-  if (error || !data.user?.email) return null;
-
-  return db.user.findFirst({
-    where: {
-      OR: [
-        { supabaseUserId: data.user.id },
-        { email: data.user.email.toLowerCase() },
-      ],
-    },
-  });
+  const userId = readSessionUserId(request);
+  if (!userId) return null;
+  return db.user.findUnique({ where: { id: userId } });
 }
 
 export function isAdminUser(user: { role?: string | null; email?: string | null } | null) {
