@@ -1,0 +1,23 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { ExternalLink, Megaphone, Upload, CheckCircle2, Clock3, XCircle, CreditCard } from 'lucide-react';
+const WAVE_PAYMENT_URL = 'https://pay.wave.com/m/M_sn_nMXTyMN2aAMQ?amount=';
+import { toast } from 'sonner';
+
+export function AdRequestPanel() {
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [form, setForm] = useState({ title: '', description: '', targetUrl: '', amount: '25000', imageUrl: '' });
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const load = () => fetch('/api/ads?mine=1').then((r) => r.json()).then((d) => setCampaigns(d.campaigns || [])).catch(() => setCampaigns([]));
+  useEffect(() => { void load(); }, []);
+  const upload = async (file: File) => {
+    if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) return toast.error('Image JPG, PNG ou WebP de 5 Mo maximum.');
+    setUploading(true);
+    try { const fd = new FormData(); fd.append('file', file); const r = await fetch('/api/upload', { method: 'POST', body: fd }); const d = await r.json(); if (!r.ok) throw new Error(d.error); setForm((f) => ({ ...f, imageUrl: d.url })); toast.success('Visuel ajouté.'); } catch (e: any) { toast.error(e.message || 'Upload impossible.'); } finally { setUploading(false); }
+  };
+  const submit = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); try { const r = await fetch('/api/ads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, amount: Number(form.amount) }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error); toast.success('Demande envoyée au super-admin.'); setForm({ title: '', description: '', targetUrl: '', amount: '25000', imageUrl: '' }); await load(); } catch (e: any) { toast.error(e.message || 'Erreur'); } finally { setLoading(false); } };
+  const pay = async (campaign: any) => { window.open(`${WAVE_PAYMENT_URL}${campaign.amount}`, '_blank', 'noopener,noreferrer'); const ref = window.prompt('Après le paiement Wave, entre la référence de transaction :'); if (!ref) return; const r = await fetch('/api/ads', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaign.id, paymentRef: ref }) }); const d = await r.json(); if (!r.ok) return toast.error(d.error || 'Paiement non enregistré.'); toast.success('Paiement enregistré. Campagne en attente d’activation.'); await load(); };
+  return <section className="ad-request-panel"><div className="ad-request-heading"><div><span className="eyebrow">Visibilité</span><h2><Megaphone /> Publicité Majaay</h2><p>Présente ta marque sur l’accueil à tous les visiteurs.</p></div><span className="ad-request-badge">Validation manuelle</span></div><form onSubmit={submit} className="ad-request-form"><label>Nom de la campagne<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex. Boutique Fatou — soldes" /></label><label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Décris ton offre en quelques mots…" /></label><div className="ad-request-grid"><label>Budget (FCFA)<input required type="number" min="5000" step="1000" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></label><label>Lien de destination<input type="url" value={form.targetUrl} onChange={(e) => setForm({ ...form, targetUrl: e.target.value })} placeholder="https://…" /></label></div><label className="ad-file-drop"><Upload />{form.imageUrl ? <img src={form.imageUrl} alt="Visuel campagne" /> : <span>{uploading ? 'Téléversement…' : 'Ajouter le visuel de la campagne'}</span>}<input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} /></label><button disabled={loading || uploading || !form.imageUrl} className="ad-submit">{loading ? 'Envoi…' : 'Soumettre pour validation'}</button></form>{campaigns.length > 0 && <div className="ad-campaign-list"><h3>Mes campagnes</h3>{campaigns.map((c) => <div key={c.id} className="ad-campaign-row"><img src={c.imageUrl} alt="" /><div className="min-w-0 flex-1"><b>{c.title}</b><span>{c.amount.toLocaleString('fr-FR')} FCFA · {c.status}</span></div>{c.status === 'payment_pending' && <button onClick={() => void pay(c)}><CreditCard /> Payer</button>}{c.status === 'active' && <CheckCircle2 className="text-emerald-600" />}{c.status === 'pending' && <Clock3 className="text-amber-600" />}{c.status === 'rejected' && <XCircle className="text-red-600" />}</div>)}</div>}</section>;
+}

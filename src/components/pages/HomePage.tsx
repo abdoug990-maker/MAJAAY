@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouterStore } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { CategoryIcon } from '@/lib/category-icons';
-import { Search, ArrowUpRight, Plus, MapPin, ShieldCheck, Zap, ChevronRight, Sparkles, PackageOpen } from 'lucide-react';
+import { Search, ArrowUpRight, Plus, MapPin, ShieldCheck, Zap, ChevronRight, Sparkles, PackageOpen, Megaphone, ExternalLink } from 'lucide-react';
 
 const fallbackCategories = [
   { id: 'vehicles', name: 'Véhicules', slug: 'vehicules' }, { id: 'real-estate', name: 'Immobilier', slug: 'immobilier' }, { id: 'electronics', name: 'Électronique', slug: 'electronique' }, { id: 'fashion', name: 'Mode', slug: 'mode' }, { id: 'home', name: 'Maison', slug: 'maison' }, { id: 'services', name: 'Services', slug: 'services' },
@@ -15,14 +15,15 @@ export function HomePage() {
   const user = useAuthStore((s) => s.user);
   const [categories, setCategories] = useState<any[]>([]);
   const [listings, setListings] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
-      const [catRes, listRes] = await Promise.all([fetch('/api/categories'), fetch('/api/listings?limit=12')]);
-      const cats = await catRes.json().catch(() => []); const payload = await listRes.json().catch(() => ({}));
-      setCategories(Array.isArray(cats) && cats.length ? cats : fallbackCategories); setListings(Array.isArray(payload?.listings) ? payload.listings : []);
+      const [catRes, listRes, adsRes] = await Promise.all([fetch('/api/categories'), fetch('/api/listings?limit=12'), fetch('/api/ads')]);
+      const cats = await catRes.json().catch(() => []); const payload = await listRes.json().catch(() => ({})); const adsPayload = await adsRes.json().catch(() => ({}));
+      setCategories(Array.isArray(cats) && cats.length ? cats : fallbackCategories); setListings(Array.isArray(payload?.listings) ? payload.listings : []); setAds(Array.isArray(adsPayload?.campaigns) ? adsPayload.campaigns : []);
     } finally { setLoading(false); }
   }, []);
   useEffect(() => { void fetchData(); }, [fetchData]);
@@ -41,6 +42,8 @@ export function HomePage() {
       <div className="hero-sticker"><span>DAKAR<br /><b>↗</b></span></div>
       <div className="absolute bottom-5 right-6 hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-ink-soft/70 md:flex"><span className="h-2 w-2 rounded-full bg-coral" /> Marketplace locale, énergie globale</div>
     </section>
+
+    {ads.length > 0 && <section className="ad-shelf mt-5 md:mt-8"><div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-ink-soft"><Megaphone className="h-3.5 w-3.5 text-coral" /> À découvrir</div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{ads.map((ad) => <a key={ad.id} href={ad.targetUrl || '#'} target={ad.targetUrl ? '_blank' : undefined} rel="noreferrer" className="ad-card"><img src={ad.imageUrl} alt={ad.title} /><div className="min-w-0"><p className="line-clamp-1 text-sm font-black text-ink">{ad.title}</p><p className="mt-1 line-clamp-2 text-xs text-ink-soft">{ad.description || 'Une sélection proposée par un annonceur Majaay.'}</p></div><ExternalLink className="h-4 w-4 shrink-0 text-coral" /></a>)}</div></section>}
 
     <section className="mt-12 md:mt-16"><div className="mb-5 flex items-end justify-between"><div><p className="eyebrow">Choisir son terrain</p><h2 className="mt-1 text-2xl font-black tracking-[-.05em] text-ink md:text-3xl">Explorer par univers</h2></div><button onClick={() => navigate('search')} className="inline-flex items-center gap-1 text-xs font-black text-coral">Tout voir <ArrowUpRight className="h-4 w-4" /></button></div><div className="grid grid-cols-3 gap-3 sm:grid-cols-6 md:gap-4">{(categories.length ? categories : fallbackCategories).slice(0, 6).map((cat, index) => <button key={cat.id} onClick={() => navigate('search', { categoryId: cat.id, categoryName: cat.name })} className={`category-tile category-tile-${index % 3}`}><span className="category-symbol"><CategoryIcon slug={cat.slug} size={27} /></span><span>{cat.name}</span><ArrowUpRight className="category-arrow" /></button>)}</div></section>
 

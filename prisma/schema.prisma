@@ -37,6 +37,7 @@ model User {
   subscriptions Subscription[]
   boosts       BoostPurchase[]
   reports      Report[]     @relation("Reporter")
+  adCampaigns  AdCampaign[]
   reviewsGiven Review[]     @relation("Reviewer")
   reviewsReceived Review[]  @relation("Reviewee")
 }
@@ -98,9 +99,14 @@ model Message {
   receiver  User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
   listingId String?
   listing   Listing? @relation(fields: [listingId], references: [id])
-  content   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  content        String   @default("")
+  attachmentUrl  String?
+  attachmentType String?
+  attachmentName String?
+  isDelivered    Boolean  @default(true)
+  isRead         Boolean  @default(false)
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
 }
 
 // ===== ABONNEMENTS =====
@@ -115,6 +121,25 @@ model Subscription {
   expiresAt DateTime
   createdAt DateTime @default(now())
   paymentRef String? // Référence paiement mobile money
+}
+
+// ===== CAMPAGNES PUBLICITAIRES =====
+model AdCampaign {
+  id          String   @id @default(cuid())
+  advertiserId String
+  advertiser  User     @relation(fields: [advertiserId], references: [id])
+  title       String
+  description String?
+  imageUrl    String
+  targetUrl   String?
+  placement   String   @default("home")
+  amount      Int
+  status      String   @default("pending") // pending, approved, payment_pending, active, rejected, expired
+  startsAt    DateTime?
+  endsAt      DateTime?
+  paymentRef  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ===== BOOSTS =====

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import {
   ArrowLeft, Users, FileText, AlertTriangle, TrendingUp, CreditCard,
   Shield, Crown, Search, RefreshCw, Eye, Ban, CheckCircle2,
-  MessageSquare, ShieldCheck, Zap, X, Package,
+  MessageSquare, ShieldCheck, Zap, X, Package, Megaphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAuthHeaders } from '@/lib/client-auth';
@@ -19,7 +19,7 @@ async function adminFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   return fetch(input, { ...init, headers: { ...authHeaders, ...(init.headers || {}) } });
 }
 
-type Tab = 'dashboard' | 'users' | 'listings' | 'subscriptions' | 'reports';
+type Tab = 'dashboard' | 'users' | 'listings' | 'subscriptions' | 'ads' | 'reports';
 
 const TIER_BADGE: Record<string, string> = {
   free: 'bg-muted text-muted-foreground',
@@ -59,6 +59,7 @@ export function AdminPage() {
     { key: 'users', label: 'Utilisateurs', icon: Users, count: stats.users },
     { key: 'listings', label: 'Annonces', icon: FileText, count: stats.activeListings },
     { key: 'subscriptions', label: 'Abonnements', icon: CreditCard },
+    { key: 'ads', label: 'Publicités', icon: Megaphone },
     { key: 'reports', label: 'Signalements', icon: AlertTriangle, count: stats.pendingReports },
   ];
 
@@ -102,6 +103,7 @@ export function AdminPage() {
         {tab === 'users' && <UsersTab />}
         {tab === 'listings' && <ListingsTab />}
         {tab === 'subscriptions' && <SubscriptionsTab />}
+        {tab === 'ads' && <AdsTab />}
         {tab === 'reports' && <ReportsTab />}
       </div>
     </div>
@@ -421,6 +423,16 @@ function SubscriptionsTab() {
       )}
     </div>
   );
+}
+
+/* ==================== ADS ==================== */
+function AdsTab() {
+  const [campaigns, setCampaigns] = useState<any[]>([]); const [loading, setLoading] = useState(true);
+  const load = () => { setLoading(true); adminFetch('/api/ads?admin=1').then((r) => r.json()).then((d) => setCampaigns(d.campaigns || [])).catch(() => toast.error('Erreur')).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, []);
+  const act = async (id: string, action: string) => { const r = await adminFetch('/api/ads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) }); const d = await r.json(); if (!r.ok) return toast.error(d.error || 'Erreur'); toast.success(action === 'approve' ? 'Campagne approuvée : paiement débloqué.' : action === 'activate' ? 'Campagne activée.' : 'Campagne refusée.'); load(); };
+  if (loading) return <div className="flex justify-center py-8"><div className="animate-spin w-6 h-6 border-2 border-terracotta border-t-transparent rounded-full" /></div>;
+  return <div className="space-y-3"><div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">{campaigns.length} campagne(s)</p><Button variant="outline" size="sm" onClick={load}><RefreshCw className="w-3 h-3 mr-1" /> Actualiser</Button></div>{campaigns.map((c) => <Card key={c.id}><CardContent className="p-3"><div className="flex gap-3"><img src={c.imageUrl} alt="" className="h-16 w-24 rounded-lg object-cover" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-semibold truncate">{c.title}</h3><Badge variant="outline">{c.status}</Badge></div><p className="text-xs text-muted-foreground mt-1">{c.advertiser?.name || 'Annonceur'} · {new Intl.NumberFormat('fr-FR').format(c.amount)} FCFA</p><p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.description || 'Sans description'}</p></div></div><div className="mt-3 flex gap-2 border-t pt-3">{c.status === 'pending' && <Button size="sm" onClick={() => void act(c.id, 'approve')}><CheckCircle2 className="mr-1 h-3 w-3" /> Approuver</Button>}{c.status === 'payment_pending' && <Badge className="bg-amber-100 text-amber-800">En attente du paiement annonceur</Badge>}{c.status === 'active' && <Button variant="outline" size="sm" onClick={() => void act(c.id, 'activate')}>Réactiver 30 jours</Button>}{(c.status === 'pending' || c.status === 'payment_pending') && <Button variant="ghost" size="sm" className="text-destructive" onClick={() => void act(c.id, 'reject')}><X className="mr-1 h-3 w-3" /> Refuser</Button>}</div></CardContent></Card>)}{campaigns.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">Aucune demande publicitaire.</p>}</div>;
 }
 
 /* ==================== REPORTS ==================== */

@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS public."AdCampaign" (
+  "id" text PRIMARY KEY NOT NULL,
+  "advertiserId" text NOT NULL,
+  "title" text NOT NULL,
+  "description" text,
+  "imageUrl" text NOT NULL,
+  "targetUrl" text,
+  "placement" text NOT NULL DEFAULT 'home',
+  "amount" integer NOT NULL,
+  "status" text NOT NULL DEFAULT 'pending',
+  "startsAt" timestamptz,
+  "endsAt" timestamptz,
+  "paymentRef" text,
+  "createdAt" timestamptz NOT NULL DEFAULT now(),
+  "updatedAt" timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT "AdCampaign_advertiserId_fkey" FOREIGN KEY ("advertiserId") REFERENCES public."User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "AdCampaign_status_idx" ON public."AdCampaign" ("status");
+CREATE INDEX IF NOT EXISTS "AdCampaign_advertiserId_idx" ON public."AdCampaign" ("advertiserId");
