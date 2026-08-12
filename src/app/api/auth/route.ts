@@ -66,9 +66,10 @@ export async function POST(request: NextRequest) {
       const phone = typeof body.phone === 'string' ? body.phone.trim() : null;
       const location = typeof body.location === 'string' ? body.location.trim() : null;
       const bio = typeof body.bio === 'string' ? body.bio.trim() : null;
+      const avatar = typeof body.avatar === 'string' && body.avatar.trim().length > 0 ? body.avatar.trim() : null;
       if (name.length < 2) return errorResponse('Le nom doit contenir au moins 2 caractères.');
       if (phone && !/^[+0-9][0-9\s.-]{7,20}$/.test(phone)) return errorResponse('Numéro de téléphone invalide.');
-      const user = await db.user.update({ where: { id: userId }, data: { name, phone: phone || null, location: location || null, bio: bio || null } });
+      const user = await db.user.update({ where: { id: userId }, data: { name, phone: phone || null, location: location || null, bio: bio || null, avatar } });
       return NextResponse.json({ user: publicUser(user) });
     }
 

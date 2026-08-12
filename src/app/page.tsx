@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouterStore, PageRoute } from '@/stores/use-router-store';
+import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { HomePage } from '@/components/pages/HomePage';
 import { AuthPage } from '@/components/pages/AuthPage';
@@ -36,7 +37,7 @@ function BottomNav() {
 function DesktopNav() {
   const { page, navigate } = useRouterStore();
   const user = useAuthStore((s) => s.user);
-  return <header className="site-header"><div className="site-header-inner"><Brand /><nav className="desktop-links">{navItems.map((item) => { const Icon = item.icon; const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans'].includes(page)); return <button key={item.page} onClick={() => navigate(item.page)} className={`desktop-link ${active ? 'is-active' : ''}`}><Icon />{item.label}</button>; })}</nav><div className="header-actions"><span className="header-pulse"><Sparkles /> La marketplace qui a du goût</span>{user ? <button onClick={() => navigate('create-listing')} className="sell-button"><Plus /> Vendre un objet</button> : <button onClick={() => navigate('login')} className="login-button">Se connecter</button>}</div></div></header>;
+  return <header className="site-header"><div className="site-header-inner"><Brand /><nav className="desktop-links">{navItems.map((item) => { const Icon = item.icon; const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans'].includes(page)); return <button key={item.page} onClick={() => navigate(item.page)} className={`desktop-link ${active ? 'is-active' : ''}`}><Icon />{item.label}</button>; })}</nav><div className="header-actions"><span className="header-pulse"><Sparkles /> La marketplace qui a du goût</span>{user ? <><button onClick={() => navigate('profile')} className="nav-avatar" aria-label="Ouvrir mon profil">{user.avatar ? <Image src={user.avatar} alt="Photo de profil" width={34} height={34} /> : <span>{user.name?.[0] || 'U'}</span>}</button><button onClick={() => navigate('create-listing')} className="sell-button"><Plus /> Vendre un objet</button></> : <button onClick={() => navigate('login')} className="login-button">Se connecter</button>}</div></div></header>;
 }
 
 function PageRouter() {
@@ -58,6 +59,10 @@ function PageRouter() {
 
 export default function MaJaayApp() {
   const page = useRouterStore((s) => s.page);
+  const navigate = useRouterStore((s) => s.navigate);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1') navigate('admin-login');
+  }, [navigate]);
   const hideBottomNav = ['login', 'register', 'verify-otp', 'admin-login', 'chat-conversation'].includes(page);
   return <div className="app-shell"><DesktopNav /><div className="page-frame"><main className={hideBottomNav ? '' : 'pb-24 md:pb-12'}><PageRouter /></main>{!hideBottomNav && <BottomNav />}</div></div>;
 }
