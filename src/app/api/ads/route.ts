@@ -66,9 +66,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ campaign: await db.adCampaign.update({ where: { id }, data: { status: 'rejected' } }) });
     }
     if (action === 'activate') {
+      const paymentRef = typeof body.paymentRef === 'string' ? body.paymentRef.trim() : campaign.paymentRef;
+      const days = Number(body.days);
+      if (!paymentRef || !Number.isInteger(days) || days < 1 || days > 365) return NextResponse.json({ error: 'Référence de paiement et durée valide de 1 à 365 jours requises.' }, { status: 400 });
       const startsAt = new Date();
-      const endsAt = new Date(startsAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-      return NextResponse.json({ campaign: await db.adCampaign.update({ where: { id }, data: { status: 'active', startsAt, endsAt, paymentRef: typeof body.paymentRef === 'string' ? body.paymentRef : campaign.paymentRef } }) });
+      const endsAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000);
+      return NextResponse.json({ campaign: await db.adCampaign.update({ where: { id }, data: { status: 'active', startsAt, endsAt, paymentRef } }) });
     }
     return NextResponse.json({ error: 'Action inconnue.' }, { status: 400 });
   } catch (error: any) {
@@ -84,8 +87,8 @@ export async function PUT(request: NextRequest) {
     const id = typeof body.id === 'string' ? body.id : '';
     const paymentRef = typeof body.paymentRef === 'string' ? body.paymentRef.trim() : '';
     const campaign = await db.adCampaign.findFirst({ where: { id, advertiserId: user.id, status: 'payment_pending' } });
-    if (!campaign || !paymentRef) return NextResponse.json({ error: 'Campagne ou référence de paiement invalide.' }, { status: 400 });
-    const updated = await db.adCampaign.update({ where: { id }, data: { status: 'active', paymentRef, startsAt: new Date(), endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) } });
+    if (!campaign || !paymentRef || paymentRef.length < 4 || paymentRef.length > 120) return NextResponse.json({ error: 'Campagne ou référence de paiement invalide.' }, { status: 400 });
+    const updated = await db.adCampaign.update({ where: { id }, data: { status: 'payment_submitted', paymentRef } });
     return NextResponse.json({ campaign: updated });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Impossible d’enregistrer le paiement.' }, { status: 500 });

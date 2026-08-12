@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouterStore, PageRoute } from '@/stores/use-router-store';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { HomePage } from '@/components/pages/HomePage';
 import { AuthPage } from '@/components/pages/AuthPage';
@@ -15,7 +15,7 @@ import { PlansPage } from '@/components/pages/PlansPage';
 import { AdminPage } from '@/components/pages/AdminPage';
 import { AdminLoginPage } from '@/components/pages/AdminLoginPage';
 import Image from 'next/image';
-import { Home, Search, Plus, MessageCircle, UserRound, Sparkles } from 'lucide-react';
+import { Home, Search, Plus, MessageCircle, UserRound, Sparkles, Sun, Moon } from 'lucide-react';
 
 const navItems = [
   { page: 'home' as PageRoute, icon: Home, label: 'Découvrir' },
@@ -29,6 +29,13 @@ function Brand() {
   return <button onClick={() => navigate('home')} className="group flex items-center gap-3" aria-label="Retour à l’accueil"><span className="brand-mark"><Image src="/logo.png" alt="Ma Jaay" width={46} height={46} className="h-full w-full object-contain" priority /></span><span className="hidden text-[22px] font-black tracking-[-0.06em] text-ink sm:block">ma<span className="text-coral">.</span>jaay</span></button>;
 }
 
+function ThemeToggle() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => { const saved = window.localStorage.getItem('majaay-theme'); const enabled = saved === 'dark'; setDark(enabled); document.documentElement.classList.toggle('dark', enabled); }, []);
+  const toggle = () => { const next = !dark; setDark(next); document.documentElement.classList.toggle('dark', next); window.localStorage.setItem('majaay-theme', next ? 'dark' : 'light'); };
+  return <button className="theme-toggle" onClick={toggle} aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'}>{dark ? <Sun /> : <Moon />}</button>;
+}
+
 function BottomNav() {
   const { page, navigate } = useRouterStore();
   return <nav className="mobile-dock md:hidden"><div className="mobile-dock-inner"><button onClick={() => navigate('home')} className={`dock-item ${page === 'home' ? 'is-active' : ''}`}><Home /><span>Accueil</span></button><button onClick={() => navigate('search')} className={`dock-item ${page === 'search' ? 'is-active' : ''}`}><Search /><span>Explorer</span></button><button onClick={() => navigate('create-listing')} className="dock-publish"><span><Plus /></span><em>Vendre</em></button><button onClick={() => navigate('chat')} className={`dock-item ${page === 'chat' || page === 'chat-conversation' ? 'is-active' : ''}`}><MessageCircle /><span>Messages</span></button><button onClick={() => navigate('profile')} className={`dock-item ${['profile', 'my-listings', 'plans'].includes(page) ? 'is-active' : ''}`}><UserRound /><span>Espace</span></button></div></nav>;
@@ -37,7 +44,7 @@ function BottomNav() {
 function DesktopNav() {
   const { page, navigate } = useRouterStore();
   const user = useAuthStore((s) => s.user);
-  return <header className="site-header"><div className="site-header-inner"><Brand /><nav className="desktop-links">{navItems.map((item) => { const Icon = item.icon; const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans'].includes(page)); return <button key={item.page} onClick={() => navigate(item.page)} className={`desktop-link ${active ? 'is-active' : ''}`}><Icon />{item.label}</button>; })}</nav><div className="header-actions"><span className="header-pulse"><Sparkles /> La marketplace qui a du goût</span>{user ? <><button onClick={() => navigate('profile')} className="nav-avatar" aria-label="Ouvrir mon profil">{user.avatar ? <Image src={user.avatar} alt="Photo de profil" width={34} height={34} /> : <span>{user.name?.[0] || 'U'}</span>}</button><button onClick={() => navigate('create-listing')} className="sell-button"><Plus /> Vendre un objet</button></> : <button onClick={() => navigate('login')} className="login-button">Se connecter</button>}</div></div></header>;
+  return <header className="site-header"><div className="site-header-inner"><Brand /><nav className="desktop-links">{navItems.map((item) => { const Icon = item.icon; const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans'].includes(page)); return <button key={item.page} onClick={() => navigate(item.page)} className={`desktop-link ${active ? 'is-active' : ''}`}><Icon />{item.label}</button>; })}</nav><div className="header-actions"><ThemeToggle /><span className="header-pulse"><Sparkles /> La marketplace qui a du goût</span>{user ? <><button onClick={() => navigate('profile')} className="nav-avatar" aria-label="Ouvrir mon profil">{user.avatar ? <Image src={user.avatar} alt="Photo de profil" width={34} height={34} /> : <span>{user.name?.[0] || 'U'}</span>}</button><button onClick={() => navigate('create-listing')} className="sell-button"><Plus /> Vendre un objet</button></> : <button onClick={() => navigate('login')} className="login-button">Se connecter</button>}</div></div></header>;
 }
 
 function PageRouter() {
