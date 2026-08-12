@@ -83,7 +83,16 @@ export async function POST(request: NextRequest) {
       const userId = readSessionUserId(request);
       if (!userId) return NextResponse.json({ user: null });
       const user = await db.user.findUnique({ where: { id: userId } });
-      return NextResponse.json({ user: user ? publicUser(user) : null });
+      if (!user) return NextResponse.json({ user: null });
+      const now = new Date();
+      const activeSubscription = await db.subscription.findFirst({ where: { userId, status: 'active', expiresAt: { gt: now } }, orderBy: { expiresAt: 'desc' } });
+      const nextTier = activeSubscription?.tier || 'free';
+      const nextExpiry = activeSubscription?.expiresAt || null;
+      if (user.subscriptionTier !== nextTier || String(user.subscriptionExpiresAt || '') !== String(nextExpiry || '')) {
+        const syncedUser = await db.user.update({ where: { id: userId }, data: { subscriptionTier: nextTier, subscriptionExpiresAt: nextExpiry } });
+        return NextResponse.json({ user: publicUser(syncedUser) });
+      }
+      return NextResponse.json({ user: publicUser(user) });
     }
 
     return errorResponse('Action invalide.');

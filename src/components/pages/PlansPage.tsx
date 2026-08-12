@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouterStore } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -69,7 +69,17 @@ const PLANS = [
 export function PlansPage() {
   const navigate = useRouterStore((s) => s.navigate);
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'check' }) })
+      .then((response) => response.json())
+      .then((data) => { if (!cancelled && data.user) setUser(data.user); })
+      .finally(() => { if (!cancelled) setSyncing(false); });
+    return () => { cancelled = true; };
+  }, [setUser]);
 
   const handleSubscribe = async (tier: string, price: number) => {
     if (!user) { navigate('login'); return; }
@@ -98,7 +108,7 @@ export function PlansPage() {
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate('home')}><ArrowLeft className="w-5 h-5" /></Button>
           <div>
             <h1 className="text-[16px] font-bold tracking-tight">Abonnements</h1>
-            <p className="text-[11px] text-muted-foreground">Choisissez votre plan</p>
+            <p className="text-[11px] text-muted-foreground">{syncing ? 'Synchronisation de votre compte…' : user?.subscriptionTier && user.subscriptionTier !== 'free' ? `Plan ${user.subscriptionTier} actif` : 'Votre plan et ses avantages'}</p>
           </div>
         </div>
       </div>

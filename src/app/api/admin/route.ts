@@ -88,7 +88,11 @@ export async function PUT(request: NextRequest) {
     if (type === 'update-user' && userId) {
       const updateData: any = {};
       if (data.role) updateData.role = data.role;
-      if (data.subscriptionTier) updateData.subscriptionTier = data.subscriptionTier;
+      if (data.subscriptionTier) {
+        updateData.subscriptionTier = data.subscriptionTier;
+        if (data.subscriptionTier === 'free') updateData.subscriptionExpiresAt = null;
+        else updateData.subscriptionExpiresAt = data.subscriptionExpiresAt ? new Date(data.subscriptionExpiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      }
       if (data.isVerifiedSeller !== undefined) updateData.isVerifiedSeller = data.isVerifiedSeller;
       if (data.name) updateData.name = data.name;
       if (data.isVerified !== undefined) updateData.isVerified = data.isVerified;
