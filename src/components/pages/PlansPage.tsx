@@ -73,7 +73,7 @@ export function PlansPage() {
 
   const handleSubscribe = async (tier: string, price: number) => {
     if (!user) { navigate('login'); return; }
-    if (price === 0) { toast.info('Le plan gratuit ne permet pas de publier.'); return; }
+    if (price === 0) { toast.success('Le plan Gratuit est actif : vous pouvez publier jusqu’à 3 annonces.'); return; }
     setSubscribing(tier);
     try {
       const authHeaders = await getAuthHeaders();
