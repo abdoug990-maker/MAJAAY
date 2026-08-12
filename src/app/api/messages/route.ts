@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
           ],
           ...(listingId ? { listingId } : {}),
         },
-        include: { sender: { select: { id: true, name: true, avatar: true } }, listing: { select: { id: true, title: true, images: true, price: true } } },
+        include: { sender: { select: { id: true, name: true, avatar: true, phone: true } }, receiver: { select: { id: true, name: true, avatar: true, phone: true } }, listing: { select: { id: true, title: true, images: true, price: true } } },
         orderBy: { createdAt: 'asc' },
         take: 200,
       });
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     const messages = await db.message.findMany({
       where: { OR: [{ senderId: user.id }, { receiverId: user.id }] },
       include: {
-        sender: { select: { id: true, name: true, avatar: true } },
-        receiver: { select: { id: true, name: true, avatar: true } },
+        sender: { select: { id: true, name: true, avatar: true, phone: true } },
+        receiver: { select: { id: true, name: true, avatar: true, phone: true } },
         listing: { select: { id: true, title: true, images: true, price: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (!receiver) return NextResponse.json({ error: 'Destinataire introuvable.' }, { status: 404 });
     const message = await db.message.create({
       data: { senderId: user.id, receiverId, listingId, content, attachmentUrl, attachmentType, attachmentName, isDelivered: true },
-      include: { sender: { select: { id: true, name: true, avatar: true } }, listing: { select: { id: true, title: true, images: true, price: true } } },
+      include: { sender: { select: { id: true, name: true, avatar: true, phone: true } }, receiver: { select: { id: true, name: true, avatar: true, phone: true } }, listing: { select: { id: true, title: true, images: true, price: true } } },
     });
     return NextResponse.json({ message }, { status: 201 });
   } catch (error: any) {
