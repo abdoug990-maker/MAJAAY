@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouterStore } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -108,13 +109,18 @@ export function HomePage() {
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/[0.04] rounded-full" />
         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/[0.03] rounded-full" />
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-5 md:mb-7 max-w-7xl mx-auto">
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-[24px] md:text-[30px] font-extrabold tracking-tight">Ma Jaay</h1>
-                <Sparkles className="w-4 h-4 text-gold" />
+          <div className="flex items-center justify-between mb-7 md:mb-10 max-w-7xl mx-auto">
+            <div className="flex items-center gap-3.5">
+              <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(0,0,0,0.2)] ring-1 ring-white/30">
+                <Image src="/logo.png" alt="Logo Ma Jaay" width={56} height={56} className="h-full w-full object-contain" priority />
               </div>
-              <p className="text-white/60 text-[13px] font-medium">Le marketplace du Senegal</p>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h1 className="text-[26px] md:text-[34px] font-black tracking-[-0.04em]">Ma Jaay</h1>
+                  <Sparkles className="w-4 h-4 text-gold" />
+                </div>
+                <p className="text-white/65 text-[13px] md:text-sm font-medium">Le marketplace qui nous rassemble</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {user ? (
@@ -128,7 +134,10 @@ export function HomePage() {
               )}
             </div>
           </div>
-          <div className="relative max-w-5xl mx-auto amazon-search-ring rounded-xl">
+          <div className="max-w-5xl mx-auto mb-4 text-center md:text-left">
+            <p className="text-white/75 text-sm md:text-base font-medium">Achetez, vendez et découvrez les meilleures offres du Sénégal.</p>
+          </div>
+          <div className="relative max-w-5xl mx-auto amazon-search-ring rounded-2xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground/60" />
                           <Input placeholder="Rechercher des produits, des services et des annonces..." className="pl-11 pr-12 h-[52px] md:h-[58px] rounded-xl bg-white/[0.98] text-foreground shadow-premium border-0 text-[14px] md:text-[16px] placeholder:text-muted-foreground/60" value={search}
               onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />

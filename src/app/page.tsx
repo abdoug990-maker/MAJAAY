@@ -13,6 +13,7 @@ import { MyListingsPage } from '@/components/pages/MyListingsPage';
 import { PlansPage } from '@/components/pages/PlansPage';
 import { AdminPage } from '@/components/pages/AdminPage';
 import { AdminLoginPage } from '@/components/pages/AdminLoginPage';
+import Image from 'next/image';
 import { Home, Search, PlusCircle, MessageCircle, User } from 'lucide-react';
 import { useChatSocket } from '@/hooks/use-chat-socket';
 
@@ -66,6 +67,7 @@ function BottomNav() {
 
 function DesktopNav() {
   const { page, navigate } = useRouterStore();
+  const user = useAuthStore((s) => s.user);
   const items = [
     { page: 'home' as PageRoute, icon: Home, label: 'Accueil' },
     { page: 'search' as PageRoute, icon: Search, label: 'Rechercher' },
@@ -76,23 +78,28 @@ function DesktopNav() {
 
   return (
     <header className="hidden md:block sticky top-0 z-40 border-b border-white/10 bg-[#131921] text-white shadow-lg">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-6 px-8">
-        <button onClick={() => navigate('home')} className="flex items-center gap-2 text-lg font-extrabold tracking-tight shrink-0">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#FF9900] text-[#131921] shadow-sm text-xl">M</span>
-          <span className="text-[20px]">Ma Jaay</span>
+      <div className="mx-auto flex h-[78px] max-w-7xl items-center gap-3 px-3 sm:px-5 lg:gap-6 lg:px-8">
+        <button onClick={() => navigate('home')} className="group flex items-center gap-3 text-lg font-extrabold tracking-tight shrink-0">
+          <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-1 ring-white/20 transition-transform duration-200 group-hover:scale-105">
+            <Image src="/logo.png" alt="Ma Jaay" width={48} height={48} className="h-full w-full object-contain" priority />
+          </span>
+          <span className="hidden lg:block text-[21px] tracking-[-0.03em]">Ma Jaay</span>
         </button>
         <nav className="flex items-center gap-1 flex-1 justify-center">
           {items.map((item) => {
             const Icon = item.icon;
             const active = page === item.page || (item.page === 'profile' && ['profile', 'my-listings', 'plans', 'admin'].includes(page));
             return (
-              <button key={item.page} onClick={() => navigate(item.page)} className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors ${active ? 'bg-white/15 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}>
+              <button key={item.page} onClick={() => navigate(item.page)} className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2.5 text-xs font-semibold transition-colors lg:gap-2 lg:px-4 lg:text-sm ${active ? 'bg-white/15 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}>
                 <Icon className="h-4 w-4" />{item.label}
               </button>
             );
           })}
           </nav>
-          <button onClick={() => navigate('admin-login')} className="ml-auto rounded-md border border-white/40 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10">Admin</button>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="hidden 2xl:block text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Le marché qui nous rassemble</span>
+            {!user && <button onClick={() => navigate('login')} className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20">Se connecter</button>}
+          </div>
         </div>
       </header>
   );
