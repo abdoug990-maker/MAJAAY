@@ -61,6 +61,9 @@ server.log
 # uploads
 upload/
 
+# Keep the application upload API route tracked; ignore only runtime upload data.
+!/src/app/api/upload/
+!/src/app/api/upload/route.ts
 # additional dev logs
 dev2.log
 dev3.log
