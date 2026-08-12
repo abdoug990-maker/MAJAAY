@@ -1,280 +1,58 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import Image from 'next/image';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouterStore } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MapPin, Star, Zap, ChevronRight, Plus, TrendingUp, Shield, Sparkles, Crown } from 'lucide-react';
 import { CategoryIcon } from '@/lib/category-icons';
+import { Search, ArrowUpRight, Plus, MapPin, ShieldCheck, Zap, ChevronRight, Sparkles, PackageOpen } from 'lucide-react';
 
-const SUBSCRIPTION_BADGE: Record<string, { label: string; className: string }> = {
-  premium_plus: { label: 'Premium+', className: 'bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow-sm' },
-  premium: { label: 'Premium', className: 'bg-terracotta text-white shadow-sm' },
-  standard: { label: 'Standard', className: 'bg-accent text-accent-foreground shadow-sm' },
-  free: { label: 'Gratuit', className: 'bg-muted text-muted-foreground' },
-};
+const fallbackCategories = [
+  { id: 'vehicles', name: 'Véhicules', slug: 'vehicules' }, { id: 'real-estate', name: 'Immobilier', slug: 'immobilier' }, { id: 'electronics', name: 'Électronique', slug: 'electronique' }, { id: 'fashion', name: 'Mode', slug: 'mode' }, { id: 'home', name: 'Maison', slug: 'maison' }, { id: 'services', name: 'Services', slug: 'services' },
+];
 
 export function HomePage() {
   const navigate = useRouterStore((s) => s.navigate);
   const user = useAuthStore((s) => s.user);
   const [categories, setCategories] = useState<any[]>([]);
   const [listings, setListings] = useState<any[]>([]);
-  const [featuredListings, setFeaturedListings] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
-      const [catRes, listRes] = await Promise.all([fetch('/api/categories'), fetch('/api/listings?limit=10')]);
-      const catsPayload = await catRes.json().catch(() => []);
-      const listPayload = await listRes.json().catch(() => ({}));
-      const cats = Array.isArray(catsPayload) ? catsPayload : [];
-      const safeListings = Array.isArray(listPayload?.listings) ? listPayload.listings : [];
-      setCategories(cats);
-      setListings(safeListings);
-      setFeaturedListings(safeListings.filter((l: any) => l.featured || l.isBoosted));
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      const [catRes, listRes] = await Promise.all([fetch('/api/categories'), fetch('/api/listings?limit=12')]);
+      const cats = await catRes.json().catch(() => []); const payload = await listRes.json().catch(() => ({}));
+      setCategories(Array.isArray(cats) && cats.length ? cats : fallbackCategories); setListings(Array.isArray(payload?.listings) ? payload.listings : []);
+    } finally { setLoading(false); }
   }, []);
+  useEffect(() => { void fetchData(); }, [fetchData]);
+  const doSearch = () => search.trim() && navigate('search', { q: search.trim() });
 
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const handleSearch = () => {
-    if (search.trim()) navigate('search', { q: search.trim() });
-  };
-
-  const getTierBadge = (tier: string) => SUBSCRIPTION_BADGE[tier] || SUBSCRIPTION_BADGE.free;
-
-  const renderListingCard = (listing: any, idx: number) => {
-    const hasImages = listing.images && listing.images !== '[]';
-    const firstImage = hasImages ? JSON.parse(listing.images)[0] : null;
-    const tierBadge = getTierBadge(listing.seller?.subscriptionTier || 'free');
-    return (
-                  <Card key={listing.id}
-        className="cursor-pointer overflow-hidden group marketplace-card hover:shadow-card-hover transition-all duration-300"
-        style={{ animationDelay: `${idx * 50}ms` }}
-        onClick={() => navigate('listing-detail', { id: listing.id })}>
-        <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-          {firstImage ? (
-            <img src={firstImage} alt={listing.title} className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500" loading="lazy" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
-              <CategoryIcon slug={listing.category?.slug || 'alimentation'} size={32} />
-            </div>
-          )}
-          {listing.isBoosted && (
-            <div className="absolute top-2.5 left-2.5">
-              <Badge className="bg-amber-500/95 backdrop-blur text-white text-[10px] font-medium badge-boosted flex items-center gap-1 px-2 py-0.5 rounded-md">
-                <Zap className="w-3 h-3 fill-current" /> Sponsorise
-              </Badge>
-            </div>
-          )}
-          {listing.featured && !listing.isBoosted && (
-            <div className="absolute top-2.5 left-2.5">
-              <Badge className="bg-foreground/80 backdrop-blur text-white text-[10px] font-medium flex items-center gap-1 px-2 py-0.5 rounded-md">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> Vedette
-              </Badge>
-            </div>
-          )}
-          <div className="absolute bottom-2 right-2">
-            <Badge className={`${tierBadge.className} text-[9px] font-medium px-1.5 py-0 rounded`}>{tierBadge.label}</Badge>
-          </div>
-        </div>
-        <CardContent className="p-3 pt-2.5">
-          <h3 className="font-semibold text-[13px] leading-snug line-clamp-2 mb-1.5 text-foreground/90">{listing.title}</h3>
-          <p className="text-terracotta font-bold text-[15px] tracking-tight mb-1.5">{formatPrice(listing.price)}</p>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 min-w-0">
-              {listing.seller?.isVerifiedSeller && <Shield className="w-3.5 h-3.5 text-accent flex-shrink-0" />}
-              <span className="text-[11px] text-muted-foreground truncate">{listing.seller?.name}</span>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-shrink-0">
-              <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{listing.city}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  return (
-    <div className="min-h-screen pb-20 marketplace-surface">
-      {/* Hero Header */}
-      <div className="gradient-hero text-white px-5 pt-8 pb-9 md:px-10 md:pt-10 md:pb-12 md:rounded-b-2xl -mx-4 md:mx-0 -mt-4 md:mt-0 relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/[0.04] rounded-full" />
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/[0.03] rounded-full" />
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-7 md:mb-10 max-w-7xl mx-auto">
-            <div className="flex items-center gap-3.5">
-              <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(0,0,0,0.2)] ring-1 ring-white/30">
-                <Image src="/logo.png" alt="Logo Ma Jaay" width={56} height={56} className="h-full w-full object-contain" priority />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h1 className="text-[26px] md:text-[34px] font-black tracking-[-0.04em]">Ma Jaay</h1>
-                  <Sparkles className="w-4 h-4 text-gold" />
-                </div>
-                <p className="text-white/65 text-[13px] md:text-sm font-medium">Le marketplace qui nous rassemble</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {user ? (
-                <button onClick={() => navigate('profile')} className="w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center text-sm font-bold ring-1 ring-white/20 hover:bg-white/25 transition-colors">
-                  {user.name?.[0] || 'U'}
-                </button>
-              ) : (
-                <Button size="sm" variant="ghost" className="text-white/90 hover:bg-white/15 font-semibold text-sm h-9 px-4" onClick={() => navigate('login')}>
-                  Connexion
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="max-w-5xl mx-auto mb-4 text-center md:text-left">
-            <p className="text-white/75 text-sm md:text-base font-medium">Achetez, vendez et découvrez les meilleures offres du Sénégal.</p>
-          </div>
-          <div className="relative max-w-5xl mx-auto amazon-search-ring rounded-2xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground/60" />
-                          <Input placeholder="Rechercher des produits, des services et des annonces..." className="pl-11 pr-12 h-[52px] md:h-[58px] rounded-xl bg-white/[0.98] text-foreground shadow-premium border-0 text-[14px] md:text-[16px] placeholder:text-muted-foreground/60" value={search}
-              onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
-            <Button size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-xl gradient-majaay shadow-sm hover:opacity-90" onClick={handleSearch}>
-              <Search className="w-4 h-4 text-white" />
-            </Button>
-          </div>
-        </div>
+  return <div className="px-4 pb-6 md:px-8 lg:px-12">
+    <section className="signature-hero relative mt-5 overflow-hidden rounded-[32px] px-6 py-8 text-ink md:mt-8 md:min-h-[470px] md:px-12 md:py-12 lg:px-16">
+      <div className="hero-orbit hero-orbit-one" /><div className="hero-orbit hero-orbit-two" />
+      <div className="relative z-10 max-w-3xl">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-3 py-2 text-[10px] font-black uppercase tracking-[.16em] text-ink-soft"><Sparkles className="h-3.5 w-3.5 text-coral" /> Le goût du bon deal</div>
+        <h1 className="max-w-2xl text-[clamp(42px,7vw,86px)] font-black leading-[.9] tracking-[-.085em]">Tout ce qui <span className="text-coral">compte.</span><br /><span className="font-serif italic font-medium">Juste à côté.</span></h1>
+        <p className="mt-6 max-w-lg text-[15px] font-medium leading-relaxed text-ink-soft md:text-lg">La nouvelle façon de trouver, vendre et faire circuler les belles choses au Sénégal.</p>
+        <div className="mt-8 flex max-w-2xl items-center gap-2 rounded-2xl border border-ink/10 bg-paper p-2 shadow-[0_18px_45px_rgba(16,32,27,.14)] focus-within:ring-4 focus-within:ring-coral/15"><Search className="ml-3 h-5 w-5 shrink-0 text-ink-soft" /><input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="Que cherchez-vous aujourd’hui ?" className="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm font-semibold outline-none placeholder:text-ink-soft/55 md:text-base" /><button onClick={doSearch} className="rounded-xl bg-ink px-5 py-3 text-xs font-black text-paper transition hover:-translate-y-0.5">Rechercher</button></div>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-ink-soft"><span>Populaire :</span>{['Dakar', 'Téléphones', 'Voitures'].map((term) => <button key={term} onClick={() => { setSearch(term); navigate('search', { q: term }); }} className="rounded-full border border-ink/10 bg-white/40 px-3 py-1.5 transition hover:bg-white">{term}</button>)}</div>
       </div>
+      <div className="hero-sticker"><span>DAKAR<br /><b>↗</b></span></div>
+      <div className="absolute bottom-5 right-6 hidden items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-ink-soft/70 md:flex"><span className="h-2 w-2 rounded-full bg-coral" /> Marketplace locale, énergie globale</div>
+    </section>
 
-      <div className="px-4 md:px-0 mt-6 md:mt-8 max-w-7xl mx-auto">
-        {/* Quick Actions */}
-        <div className="flex gap-2.5 mb-8 overflow-x-auto no-scrollbar -mx-1 px-1">
-          {[
-            { icon: Plus, label: 'Publier', page: 'create-listing', needsAuth: false, color: 'text-terracotta bg-terracotta/8' },
-            { icon: TrendingUp, label: 'Tendances', page: 'search', needsAuth: false, color: 'text-gold bg-gold/10' },
-            { icon: Crown, label: 'Premium', page: 'plans', needsAuth: false, color: 'text-accent bg-accent/8' },
-          ].map((a) => (
-            <button key={a.page} onClick={() => (!a.needsAuth || user) ? navigate(a.page) : navigate('login')}
-              className={`flex items-center gap-2 pl-3.5 pr-4 py-2.5 rounded-2xl font-medium text-[13px] shadow-sm border border-border/60 hover:shadow-card-hover transition-all duration-200 whitespace-nowrap ${a.color}`}>
-              <a.icon className="w-[18px] h-[18px]" strokeWidth={2} />{a.label}
-            </button>
-          ))}
-        </div>
+    <section className="mt-12 md:mt-16"><div className="mb-5 flex items-end justify-between"><div><p className="eyebrow">Choisir son terrain</p><h2 className="mt-1 text-2xl font-black tracking-[-.05em] text-ink md:text-3xl">Explorer par univers</h2></div><button onClick={() => navigate('search')} className="inline-flex items-center gap-1 text-xs font-black text-coral">Tout voir <ArrowUpRight className="h-4 w-4" /></button></div><div className="grid grid-cols-3 gap-3 sm:grid-cols-6 md:gap-4">{(categories.length ? categories : fallbackCategories).slice(0, 6).map((cat, index) => <button key={cat.id} onClick={() => navigate('search', { categoryId: cat.id, categoryName: cat.name })} className={`category-tile category-tile-${index % 3}`}><span className="category-symbol"><CategoryIcon slug={cat.slug} size={27} /></span><span>{cat.name}</span><ArrowUpRight className="category-arrow" /></button>)}</div></section>
 
-        {/* Categories */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-bold tracking-tight">Explorer par categorie</h2>
-            <Button variant="ghost" size="sm" className="text-terracotta text-[13px] font-medium h-8" onClick={() => navigate('search')}>
-              Tout voir <ChevronRight className="w-4 h-4 ml-0.5" />
-            </Button>
-          </div>
-          {loading ? (
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-x-3 gap-y-4 md:gap-x-5 md:gap-y-5">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center gap-2">
-                  <Skeleton className="w-[60px] h-[60px] rounded-2xl" />
-                  <Skeleton className="w-14 h-3 rounded" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-x-3 gap-y-4 md:gap-x-5 md:gap-y-5">
-              {categories.map((cat: any) => (
-                <button key={cat.id} className="flex flex-col items-center gap-1.5 group animate-fade-up"
-                  style={{ animationDelay: `${categories.indexOf(cat) * 40}ms` }}
-                  onClick={() => navigate('search', { categoryId: cat.id, categoryName: cat.name })}>
-                  <CategoryIcon slug={cat.slug} size={26} className="group-hover:scale-105 transition-transform" />
-                  <span className="text-[11px] text-center text-muted-foreground group-hover:text-foreground transition-colors leading-tight font-medium">{cat.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+    <section className="mt-14 md:mt-20"><div className="mb-5 flex items-end justify-between"><div><p className="eyebrow">Le marché, en temps réel</p><h2 className="mt-1 text-2xl font-black tracking-[-.05em] text-ink md:text-3xl">Les dernières trouvailles</h2></div><button onClick={() => navigate('search')} className="inline-flex items-center gap-1 text-xs font-black text-coral">Explorer <ChevronRight className="h-4 w-4" /></button></div>{loading ? <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{[1,2,3,4].map((n) => <div key={n} className="skeleton-card" />)}</div> : listings.length === 0 ? <div className="empty-market"><PackageOpen className="h-10 w-10 text-coral" /><h3>Le prochain bon deal peut être le tien.</h3><p>Le catalogue est prêt. Publie une annonce et deviens le premier vendeur de ce nouvel espace.</p><button onClick={() => navigate(user ? 'create-listing' : 'login')} className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-xs font-black text-paper"><Plus className="h-4 w-4" /> Publier une annonce</button></div> : <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{listings.map((listing, index) => <ListingCard key={listing.id} listing={listing} index={index} onOpen={() => navigate('listing-detail', { id: listing.id })} />)}</div>}</section>
 
-        {/* Featured / Boosted */}
-        {featuredListings.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-amber-600 fill-amber-600" />
-              </div>
-              <h2 className="text-[16px] font-bold tracking-tight">Annonces en vedette</h2>
-            </div>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-              {featuredListings.map((l: any) => {
-                const hasImg = l.images && l.images !== '[]';
-                const img = hasImg ? JSON.parse(l.images)[0] : null;
-                return (
-                  <Card key={l.id} className="min-w-[240px] max-w-[240px] cursor-pointer shadow-sm hover:shadow-card-hover transition-all duration-300 overflow-hidden flex-shrink-0 border-0 group"
-                    onClick={() => navigate('listing-detail', { id: l.id })}>
-                    <div className="relative h-[140px] bg-muted overflow-hidden">
-                      {img ? (
-                        <img src={img} alt={l.title} className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
-                          <CategoryIcon slug={l.category?.slug || 'alimentation'} size={28} />
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 left-2 bg-amber-500/90 backdrop-blur text-white text-[10px] font-medium flex items-center gap-1 px-2 py-0.5 rounded-md">
-                        <Zap className="w-2.5 h-2.5 fill-current" /> Boostee
-                      </Badge>
-                    </div>
-                    <CardContent className="p-3 pt-2.5">
-                      <h3 className="font-semibold text-[13px] line-clamp-1 mb-1">{l.title}</h3>
-                      <p className="text-terracotta font-bold text-sm">{formatPrice(l.price)}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* All Listings */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-bold tracking-tight">Dernieres annonces</h2>
-            <Button variant="ghost" size="sm" className="text-terracotta text-[13px] font-medium h-8" onClick={() => navigate('search')}>
-              Tout voir <ChevronRight className="w-4 h-4 ml-0.5" />
-            </Button>
-          </div>
-          {loading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="overflow-hidden border-0"><Skeleton className="aspect-[4/3]" /><div className="p-3"><Skeleton className="h-3.5 mb-2 rounded" /><Skeleton className="h-5 w-24 rounded" /></div></Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-              {listings.map((l, i) => renderListingCard(l, i))}
-            </div>
-          )}
-        </div>
-
-        {/* Trust Banner */}
-          <Card className="marketplace-card overflow-hidden mb-6">
-          <div className="gradient-majaay-dark p-5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="flex items-start gap-3.5 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Shield className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="font-bold text-[14px] mb-1 text-white">Transactions securisees</h3>
-                <p className="text-[12px] text-white/60 leading-relaxed">Vendeurs verifies CNI/NINEA. Paiement mobile money : Wave, Orange Money, Free Money.</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
+    <section className="mt-14 grid gap-4 md:mt-20 md:grid-cols-[1.25fr_.75fr]"><div className="trust-panel"><div className="flex items-start justify-between"><div><p className="eyebrow text-lime">L’esprit Majaay</p><h2 className="mt-2 max-w-md text-3xl font-black leading-tight tracking-[-.06em] text-paper">Acheter local.<br /><span className="text-lime">Vendre mieux.</span></h2></div><ShieldCheck className="h-9 w-9 text-lime" /></div><p className="mt-8 max-w-md text-sm leading-relaxed text-paper/65">Des annonces claires, des vendeurs vérifiés et une expérience pensée pour aller droit au bon choix.</p></div><button onClick={() => navigate(user ? 'create-listing' : 'login')} className="sell-cta"><span className="eyebrow">Ton prochain chapitre</span><strong>Une chose à vendre ?<br />Fais-la briller.</strong><span className="cta-arrow"><Plus /></span></button></section>
+  </div>;
 }
 
-export function formatPrice(price: number | null): string {
-  if (!price) return 'Prix sur demande';
-  return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
+export function formatPrice(price: number | null): string { if (!price) return 'Prix sur demande'; return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA'; }
+
+function ListingCard({ listing, index, onOpen }: { listing: any; index: number; onOpen: () => void }) {
+  let image: string | null = null; try { image = listing.images && listing.images !== '[]' ? JSON.parse(listing.images)[0] : null; } catch { image = null; }
+  return <article onClick={onOpen} className="new-listing-card" style={{ animationDelay: `${index * 45}ms` }}><div className="listing-visual">{image ? <img src={image} alt={listing.title} loading="lazy" /> : <div className="listing-placeholder"><CategoryIcon slug={listing.category?.slug || 'services'} size={34} /></div>}{listing.isBoosted && <span className="boost-chip"><Zap className="h-3 w-3" /> Boost</span>}<button type="button" aria-label="Voir l’annonce" className="listing-arrow"><ArrowUpRight /></button></div><div className="p-3.5"><p className="line-clamp-2 text-sm font-black leading-snug text-ink">{listing.title}</p><p className="mt-2 text-base font-black text-coral">{formatPrice(listing.price)}</p><div className="mt-3 flex items-center justify-between gap-2 text-[10px] font-bold text-ink-soft"><span className="flex min-w-0 items-center gap-1 truncate"><MapPin className="h-3 w-3 shrink-0" />{listing.city || 'Sénégal'}</span>{listing.seller?.isVerifiedSeller && <ShieldCheck className="h-3.5 w-3.5 text-accent" />}</div></div></article>;
 }
