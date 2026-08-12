@@ -6,8 +6,8 @@ import { randomUUID } from 'node:crypto';
 export const runtime = 'nodejs';
 
 const BUCKET = 'listing-images';
-const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const MAX_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'text/plain', 'text/csv']);
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,12 +18,12 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file');
     if (!(file instanceof File)) return NextResponse.json({ error: 'Aucune image reçue.' }, { status: 400 });
-    if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: 'Format non pris en charge. Utilisez JPG, PNG, WebP ou GIF.' }, { status: 400 });
-    if (file.size <= 0 || file.size > MAX_SIZE) return NextResponse.json({ error: 'Chaque image doit peser au maximum 5 Mo.' }, { status: 400 });
+    if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: 'Format non pris en charge. Utilisez JPG, PNG, WebP, GIF, PDF ou TXT.' }, { status: 400 });
+    if (file.size <= 0 || file.size > MAX_SIZE) return NextResponse.json({ error: 'Chaque fichier doit peser au maximum 10 Mo.' }, { status: 400 });
 
-    const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
+    const extension = file.type === 'image/jpeg' ? 'jpg' : file.type === 'application/pdf' ? 'pdf' : file.type === 'text/plain' ? 'txt' : file.type === 'text/csv' ? 'csv' : file.type.split('/')[1];
     const path = `${user.id}/${Date.now()}-${randomUUID()}.${extension}`;
-    const bucketResult = await supabaseAdmin.storage.createBucket(BUCKET, { public: true, fileSizeLimit: MAX_SIZE });
+    const bucketResult = await supabaseAdmin.storage.createBucket(BUCKET, { public: true, fileSizeLimit: MAX_SIZE, allowedMimeTypes: Array.from(ALLOWED_TYPES) });
     if (bucketResult.error && !/already exists/i.test(bucketResult.error.message)) {
       return NextResponse.json({ error: `Impossible d’initialiser le stockage : ${bucketResult.error.message}` }, { status: 500 });
     }
