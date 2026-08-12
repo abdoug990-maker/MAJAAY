@@ -35,6 +35,22 @@ export function ListingDetailPage() {
     navigate('chat-conversation', { listingId: listing.id, sellerId: listing.seller.id, sellerName: listing.seller.name, listingTitle: listing.title });
   };
 
+  const handleCall = () => {
+    if (!user) { navigate('login'); return; }
+    if (!listing.seller?.phone) { toast.info('Ce vendeur n’a pas renseigné de numéro public. Utilisez la messagerie.'); return; }
+    window.location.href = `tel:${listing.seller.phone}`;
+  };
+
+  const handleShare = async () => {
+    const shareData = { title: listing.title, text: `Découvrez cette annonce sur Ma Jaay : ${listing.title}`, url: window.location.href };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else { await navigator.clipboard.writeText(window.location.href); toast.success('Lien de l’annonce copié.'); }
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') toast.error('Impossible de partager cette annonce.');
+    }
+  };
+
   const handleBoost = async () => {
     if (!user) { navigate('login'); return; }
     try {
@@ -169,10 +185,10 @@ export function ListingDetailPage() {
               <MessageCircle className="w-5 h-5" strokeWidth={2} /> Contacter le vendeur
             </Button>
             <div className="flex gap-2.5">
-              <Button variant="outline" className="flex-1 h-11 rounded-xl font-medium text-[13px] flex items-center gap-2" onClick={() => toast.info('Appel direct bientôt disponible !')}>
+              <Button variant="outline" className="flex-1 h-11 rounded-xl font-medium text-[13px] flex items-center gap-2" onClick={handleCall}>
                 <Phone className="w-4 h-4" /> Appeler
               </Button>
-              <Button variant="outline" className="flex-1 h-11 rounded-xl font-medium text-[13px] flex items-center gap-2" onClick={() => toast.info('Lien copié !')}>
+              <Button variant="outline" className="flex-1 h-11 rounded-xl font-medium text-[13px] flex items-center gap-2" onClick={handleShare}>
                 <Share2 className="w-4 h-4" /> Partager
               </Button>
             </div>

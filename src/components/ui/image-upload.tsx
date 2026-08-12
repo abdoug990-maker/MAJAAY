@@ -23,6 +23,7 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
 
     const toUpload = Array.from(files).slice(0, remaining);
     setUploading(true);
+    let nextImages = [...images];
 
     for (const file of toUpload) {
       if (file.size > 5 * 1024 * 1024) {
@@ -36,7 +37,8 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        onChange([...images, data.url]);
+        nextImages = [...nextImages, data.url];
+        onChange(nextImages);
       } catch (err: any) {
         toast.error(err.message);
       }
@@ -44,8 +46,14 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
     setUploading(false);
   }, [images, maxImages, onChange]);
 
-  const removeImage = (index: number) => {
+  const removeImage = async (index: number) => {
+    const url = images[index];
     onChange(images.filter((_, i) => i !== index));
+    const marker = '/listing-images/';
+    const path = url.includes(marker) ? decodeURIComponent(url.split(marker)[1].split('?')[0]) : null;
+    if (path) {
+      try { await fetch('/api/upload', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) }); } catch { /* l’aperçu local est déjà retiré */ }
+    }
   };
 
   return (
@@ -94,7 +102,10 @@ export function ImageUpload({ images, onChange, maxImages = 5 }: ImageUploadProp
         accept="image/jpeg,image/png,image/webp,image/gif"
         multiple
         className="hidden"
-        onChange={(e) => e.target.files && handleUpload(e.target.files)}
+        onChange={(e) => {
+          if (e.target.files) void handleUpload(e.target.files);
+          e.currentTarget.value = '';
+        }}
       />
       <p className="text-[11px] text-muted-foreground">
         {images.length}/{maxImages} photos · JPG, PNG, WebP · Max 5 Mo chacune

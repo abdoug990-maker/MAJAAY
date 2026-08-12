@@ -59,6 +59,19 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
+    if (action === 'update-profile') {
+      const userId = readSessionUserId(request);
+      if (!userId) return errorResponse('Session expirée. Connectez-vous à nouveau.', 401);
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const phone = typeof body.phone === 'string' ? body.phone.trim() : null;
+      const location = typeof body.location === 'string' ? body.location.trim() : null;
+      const bio = typeof body.bio === 'string' ? body.bio.trim() : null;
+      if (name.length < 2) return errorResponse('Le nom doit contenir au moins 2 caractères.');
+      if (phone && !/^[+0-9][0-9\s.-]{7,20}$/.test(phone)) return errorResponse('Numéro de téléphone invalide.');
+      const user = await db.user.update({ where: { id: userId }, data: { name, phone: phone || null, location: location || null, bio: bio || null } });
+      return NextResponse.json({ user: publicUser(user) });
+    }
+
     if (action === 'logout') {
       const response = NextResponse.json({ ok: true });
       clearSessionCookie(response);
