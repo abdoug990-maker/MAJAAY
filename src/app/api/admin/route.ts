@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { unauthorized } from '@/lib/auth-server';
 import { getAdminCookieName, verifyAdminToken } from '@/lib/admin-auth';
 
@@ -26,8 +27,10 @@ export async function GET(request: NextRequest) {
       ]);
       const totalRevenue = (subs._sum.amount || 0) + (boosts._sum.amount || 0);
       const tierCounts = await db.user.groupBy({ by: ['subscriptionTier'], _count: true });
+      const activity = await db.$queryRaw<Array<{ day: Date; users: bigint; listings: bigint; messages: bigint; revenue: bigint }>>(Prisma.sql`SELECT d.day, COALESCE(u.users, 0) AS users, COALESCE(l.listings, 0) AS listings, COALESCE(m.messages, 0) AS messages, COALESCE(r.revenue, 0) AS revenue FROM generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day') AS d(day) LEFT JOIN (SELECT DATE_TRUNC('day', "createdAt") AS day, COUNT(*)::bigint AS users FROM "User" GROUP BY 1) u ON u.day = d.day LEFT JOIN (SELECT DATE_TRUNC('day', "createdAt") AS day, COUNT(*)::bigint AS listings FROM "Listing" GROUP BY 1) l ON l.day = d.day LEFT JOIN (SELECT DATE_TRUNC('day', "createdAt") AS day, COUNT(*)::bigint AS messages FROM "Message" GROUP BY 1) m ON m.day = d.day LEFT JOIN (SELECT DATE_TRUNC('day', "createdAt") AS day, SUM("amount")::bigint AS revenue FROM "Subscription" WHERE "status" = 'active' GROUP BY 1) r ON r.day = d.day ORDER BY d.day ASC`);
+      const safeActivity = activity.map((row) => ({ day: row.day, users: Number(row.users), listings: Number(row.listings), messages: Number(row.messages), revenue: Number(row.revenue) }));
       return NextResponse.json({
-        stats: { users, activeListings, messages, pendingReports: reports, newUsers, newListings, totalRevenue, sellers, tierCounts },
+        stats: { users, activeListings, messages, pendingReports: reports, newUsers, newListings, totalRevenue, sellers, tierCounts, activity: safeActivity },
       });
     }
 

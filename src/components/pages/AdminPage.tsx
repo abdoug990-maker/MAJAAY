@@ -145,6 +145,7 @@ function DashboardTab({ stats }: { stats: any }) {
         </CardContent>
       </Card>
 
+      <ActivityChart data={stats.activity || []} />
       {/* Quick actions */}
       <Card>
         <CardContent className="p-4">
@@ -161,6 +162,12 @@ function DashboardTab({ stats }: { stats: any }) {
   );
 }
 
+function ActivityChart({ data }: { data: Array<{ day: string; users: number; listings: number; messages: number; revenue: number }> }) {
+  const max = Math.max(1, ...data.map((item) => item.users + item.listings + item.messages));
+  const totalMessages = data.reduce((sum, item) => sum + item.messages, 0);
+  const totalNewUsers = data.reduce((sum, item) => sum + item.users, 0);
+  return <Card><CardContent className="p-4"><div className="flex items-start justify-between gap-3 mb-4"><div><h3 className="text-sm font-semibold">Activité des 14 derniers jours</h3><p className="text-xs text-muted-foreground">Utilisateurs, annonces et messages créés</p></div><div className="text-right"><p className="text-lg font-bold text-terracotta">{totalMessages}</p><p className="text-[10px] text-muted-foreground">messages</p></div></div><div className="h-32 flex items-end gap-1.5 border-b border-border/60 pb-1">{data.map((item) => { const height = Math.max(5, Math.round(((item.users + item.listings + item.messages) / max) * 100)); return <div key={item.day} className="group relative flex-1 h-full flex items-end"><div className="w-full rounded-t-md bg-gradient-to-t from-terracotta to-yellow-300 transition-all group-hover:opacity-80" style={{ height: `${height}%` }} title={`${item.users} utilisateurs · ${item.listings} annonces · ${item.messages} messages`} /></div>; })}</div><div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground"><span>{data[0]?.day ? new Date(data[0].day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'}</span><span>{totalNewUsers} nouveaux utilisateurs sur la période</span><span>{data[data.length - 1]?.day ? new Date(data[data.length - 1].day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'}</span></div><div className="mt-4 grid grid-cols-3 gap-2"><div className="rounded-lg bg-muted/50 p-2"><p className="text-[10px] text-muted-foreground">Nouveaux comptes</p><strong>{totalNewUsers}</strong></div><div className="rounded-lg bg-muted/50 p-2"><p className="text-[10px] text-muted-foreground">Annonces</p><strong>{data.reduce((sum, item) => sum + item.listings, 0)}</strong></div><div className="rounded-lg bg-muted/50 p-2"><p className="text-[10px] text-muted-foreground">Revenus période</p><strong>{new Intl.NumberFormat('fr-FR').format(data.reduce((sum, item) => sum + item.revenue, 0))}</strong></div></div></CardContent></Card>;
+}
 /* ==================== USERS ==================== */
 function UsersTab() {
   const [users, setUsers] = useState<any[]>([]);
