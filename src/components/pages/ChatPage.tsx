@@ -1,105 +1,24 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouterStore } from '@/stores/use-router-store';
 import { useAuthStore } from '@/stores/use-auth-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, MessageCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCheck, Image as ImageIcon, Loader2, MessageCircle, MoreHorizontal, Search, Send, ShoppingBag, Smile, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 
+function Avatar({ name, src, size = 'md' }: { name?: string | null; src?: string | null; size?: 'sm' | 'md' | 'lg' }) {
+  return <div className={`chat-avatar chat-avatar-${size}`}>{src ? <img src={src} alt="" /> : <span>{name?.trim()?.[0]?.toUpperCase() || <UserRound />}</span>}</div>;
+}
+
 export function ChatPage() {
-  const navigate = useRouterStore((s) => s.navigate);
-  const { params } = useRouterStore();
-  const user = useAuthStore((s) => s.user);
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const navigate = useRouterStore((s) => s.navigate); const { params } = useRouterStore(); const user = useAuthStore((s) => s.user);
+  const [conversations, setConversations] = useState<any[]>([]); const [messages, setMessages] = useState<any[]>([]); const [query, setQuery] = useState(''); const [newMessage, setNewMessage] = useState(''); const [loading, setLoading] = useState(true); const [sending, setSending] = useState(false);
   const isConversation = Boolean(params.sellerId);
-
-  const loadMessages = useCallback(async (silent = false) => {
-    if (!user) return;
-    if (!silent) setLoading(true);
-    try {
-      const query = isConversation
-        ? `/api/messages?userId=${encodeURIComponent(params.sellerId)}${params.listingId ? `&listingId=${encodeURIComponent(params.listingId)}` : ''}`
-        : '/api/messages';
-      const response = await fetch(query, { cache: 'no-store' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Impossible de charger les messages.');
-      if (isConversation) setMessages(data.messages || []);
-      else setConversations(data.conversations || []);
-    } catch (error: any) {
-      if (!silent) toast.error(error.message);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, [user, isConversation, params.sellerId, params.listingId]);
-
-  useEffect(() => {
-    if (!user) { navigate('login'); return; }
-    void loadMessages();
-    const interval = window.setInterval(() => void loadMessages(true), 5000);
-    return () => window.clearInterval(interval);
-  }, [user?.id, loadMessages, navigate]);
-
-  const handleSend = async () => {
-    const content = newMessage.trim();
-    if (!content || !user || !params.sellerId || sending) return;
-    setSending(true);
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receiverId: params.sellerId, listingId: params.listingId || null, content }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Impossible d’envoyer le message.');
-      setMessages((previous) => [...previous, data.message]);
-      setNewMessage('');
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setSending(false);
-    }
-  };
-
+  const loadMessages = useCallback(async (silent = false) => { if (!user) return; if (!silent) setLoading(true); try { const url = isConversation ? `/api/messages?userId=${encodeURIComponent(params.sellerId)}${params.listingId ? `&listingId=${encodeURIComponent(params.listingId)}` : ''}` : '/api/messages'; const r = await fetch(url, { cache: 'no-store' }); const d = await r.json(); if (!r.ok) throw new Error(d.error); if (isConversation) setMessages(d.messages || []); else setConversations(d.conversations || []); } catch (e: any) { if (!silent) toast.error(e.message || 'Impossible de charger les messages.'); } finally { if (!silent) setLoading(false); } }, [user, isConversation, params.sellerId, params.listingId]);
+  useEffect(() => { if (!user) { navigate('login'); return; } void loadMessages(); const timer = window.setInterval(() => void loadMessages(true), 5000); return () => window.clearInterval(timer); }, [user?.id, loadMessages, navigate]);
+  const send = async () => { const content = newMessage.trim(); if (!content || !user || !params.sellerId || sending) return; setSending(true); try { const r = await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ receiverId: params.sellerId, listingId: params.listingId || null, content }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error); setMessages((old) => [...old, d.message]); setNewMessage(''); } catch (e: any) { toast.error(e.message || 'Envoi impossible.'); } finally { setSending(false); } };
+  const filtered = useMemo(() => conversations.filter((c) => `${c.userName} ${c.listingTitle} ${c.lastMessage}`.toLowerCase().includes(query.toLowerCase())), [conversations, query]);
   if (!user) return null;
-
-  if (isConversation) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <div className="sticky top-0 z-20 flex items-center gap-3 border-b bg-background px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('chat')}><ArrowLeft className="h-5 w-5" /></Button>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-majaay font-bold text-white">{(params.sellerName || '?')[0]}</div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{params.sellerName || 'Utilisateur'}</p>
-            {params.listingTitle && <p className="truncate text-[11px] text-muted-foreground">Re: {params.listingTitle}</p>}
-          </div>
-        </div>
-        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          {loading && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-terracotta" /></div>}
-          {!loading && messages.length === 0 && <div className="py-12 text-center"><MessageCircle className="mx-auto mb-3 h-12 w-12 text-muted-foreground/30" /><p className="text-sm text-muted-foreground">Commencez la conversation !</p></div>}
-          {messages.map((message) => {
-            const isMe = message.senderId === user.id;
-            return <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${isMe ? 'rounded-br-md bg-terracotta text-white' : 'rounded-bl-md bg-muted'}`}><p className="whitespace-pre-wrap text-sm">{message.content}</p><p className={`mt-1 text-[10px] ${isMe ? 'text-white/60' : 'text-muted-foreground'}`}>{new Date(message.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p></div></div>;
-          })}
-        </div>
-        <div className="sticky bottom-0 border-t bg-background px-4 py-3"><div className="flex gap-2"><Input placeholder="Écrire un message..." className="h-11 flex-1 rounded-full" value={newMessage} onChange={(event) => setNewMessage(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && void handleSend()} /><Button size="icon" className="h-11 w-11 rounded-full gradient-majaay text-white" onClick={() => void handleSend()} disabled={sending || !newMessage.trim()}>{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</Button></div></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen pb-20">
-      <div className="sticky top-0 z-20 flex items-center gap-3 border-b bg-background px-4 py-3"><h1 className="text-lg font-bold">Messages</h1></div>
-      {loading && <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-terracotta" /></div>}
-      {!loading && conversations.length === 0 && <div className="px-4 py-20 text-center"><MessageCircle className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" /><p className="mb-1 text-lg font-semibold">Aucun message</p><p className="text-sm text-muted-foreground">Contactez un vendeur pour commencer une conversation.</p></div>}
-      {!loading && conversations.length > 0 && <div className="divide-y">{conversations.map((conversation, index) => <Card key={`${conversation.userId}-${index}`} className="cursor-pointer rounded-none border-0 transition-colors hover:bg-muted/50" onClick={() => navigate('chat-conversation', { sellerId: conversation.userId, sellerName: conversation.userName, listingId: conversation.listingId, listingTitle: conversation.listingTitle })}><CardContent className="flex items-center gap-3 p-4"><div className="flex h-12 w-12 items-center justify-center rounded-full gradient-majaay text-lg font-bold text-white">{conversation.userName?.[0] || '?'}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between"><p className="truncate text-sm font-semibold">{conversation.userName}</p><span className="flex-shrink-0 text-[11px] text-muted-foreground">{conversation.lastMessageTime ? new Date(conversation.lastMessageTime).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}</span></div><p className="mt-0.5 truncate text-sm text-muted-foreground">{conversation.lastMessage}</p>{conversation.listingTitle && <p className="truncate text-[11px] text-terracotta">Re: {conversation.listingTitle}</p>}</div>{conversation.unreadCount > 0 && <Badge className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-terracotta text-[10px] text-white">{conversation.unreadCount}</Badge>}</CardContent></Card>)}</div>}
-    </div>
-  );
+  if (isConversation) return <div className="market-chat conversation-view"><header className="chat-conversation-header"><button onClick={() => navigate('chat')} className="chat-icon-button"><ArrowLeft /></button><Avatar name={params.sellerName} size="md" /><div className="chat-header-copy"><strong>{params.sellerName || 'Utilisateur'}</strong><span>{params.listingTitle ? `À propos de ${params.listingTitle}` : 'Conversation Majaay'}</span></div><button className="chat-icon-button"><MoreHorizontal /></button></header>{params.listingTitle && <div className="chat-listing-context"><ShoppingBag /><div><b>{params.listingTitle}</b><span>Échange au sujet de cette annonce</span></div></div>}<main className="chat-messages">{loading && <Loader2 className="chat-loader animate-spin" />}{!loading && messages.length === 0 && <div className="chat-welcome"><div className="chat-welcome-icon"><MessageCircle /></div><h2>Votre conversation commence ici</h2><p>Posez une question au vendeur, proposez un prix ou demandez les détails de livraison.</p><div className="chat-suggestions"><button onClick={() => setNewMessage('Bonjour, votre article est-il toujours disponible ?')}>Toujours disponible ?</button><button onClick={() => setNewMessage('Bonjour, quel est votre meilleur prix ?')}>Meilleur prix ?</button></div></div>}{messages.map((m) => { const mine = m.senderId === user.id; return <div key={m.id} className={`chat-row ${mine ? 'mine' : ''}`}><div className={`chat-bubble ${mine ? 'bubble-mine' : 'bubble-theirs'}`}><p>{m.content}</p><footer>{new Date(m.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{mine && <CheckCheck />}</footer></div></div>; })}</main><form className="chat-composer" onSubmit={(e) => { e.preventDefault(); void send(); }}><button type="button" className="composer-tool"><ImageIcon /></button><div className="composer-input"><input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Écrire un message…" maxLength={2000} /><Smile /></div><button type="submit" className="send-button" disabled={!newMessage.trim() || sending}>{sending ? <Loader2 className="animate-spin" /> : <Send />}</button></form></div>;
+  return <div className="market-chat inbox-view"><header className="inbox-header"><div><span className="eyebrow">Boîte de réception</span><h1>Messages</h1></div><button onClick={() => navigate('home')} className="chat-icon-button"><ArrowLeft /></button></header><div className="inbox-search"><Search /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une conversation" /></div><div className="inbox-tabs"><button className="active">Tout</button><button>Non lus {conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0) > 0 && <i>{conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}</i>}</button></div>{loading && <Loader2 className="chat-loader animate-spin" />}{!loading && filtered.length === 0 && <div className="inbox-empty"><MessageCircle /><h2>Aucune conversation</h2><p>Contactez un vendeur depuis une annonce pour démarrer un échange.</p><button onClick={() => navigate('search')}>Découvrir les annonces</button></div>}<div className="conversation-list">{filtered.map((c) => <button key={c.userId} className={`conversation-item ${c.unreadCount ? 'unread' : ''}`} onClick={() => navigate('chat-conversation', { sellerId: c.userId, sellerName: c.userName, listingId: c.listingId, listingTitle: c.listingTitle })}><Avatar name={c.userName} src={c.userAvatar} size="lg" /><div className="conversation-copy"><div className="conversation-top"><strong>{c.userName || 'Utilisateur'}</strong><time>{c.lastMessageTime ? new Date(c.lastMessageTime).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}</time></div><p>{c.lastMessage}</p><span>{c.listingTitle || 'Conversation Majaay'}</span></div>{c.listingImage && <img className="conversation-listing-image" src={c.listingImage} alt="" />}{c.unreadCount > 0 && <b className="unread-badge">{c.unreadCount}</b>}</button>)}</div></div>;
 }

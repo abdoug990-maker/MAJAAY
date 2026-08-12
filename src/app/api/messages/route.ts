@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
           ],
           ...(listingId ? { listingId } : {}),
         },
-        include: { sender: { select: { id: true, name: true } } },
+        include: { sender: { select: { id: true, name: true, avatar: true } }, listing: { select: { id: true, title: true, images: true, price: true } } },
         orderBy: { createdAt: 'asc' },
         take: 200,
       });
@@ -32,9 +32,9 @@ export async function GET(request: NextRequest) {
     const messages = await db.message.findMany({
       where: { OR: [{ senderId: user.id }, { receiverId: user.id }] },
       include: {
-        sender: { select: { id: true, name: true } },
-        receiver: { select: { id: true, name: true } },
-        listing: { select: { id: true, title: true } },
+        sender: { select: { id: true, name: true, avatar: true } },
+        receiver: { select: { id: true, name: true, avatar: true } },
+        listing: { select: { id: true, title: true, images: true, price: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 200,
@@ -46,7 +46,10 @@ export async function GET(request: NextRequest) {
         conversations.set(other.id, {
           userId: other.id,
           userName: other.name,
+          userAvatar: other.avatar,
           listingId: message.listingId,
+          listingImage: (() => { try { return message.listing?.images ? JSON.parse(message.listing.images)[0] : null; } catch { return null; } })(),
+          listingPrice: message.listing?.price || null,
           listingTitle: message.listing?.title || null,
           lastMessage: message.content,
           lastMessageTime: message.createdAt,
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
     if (!receiver) return NextResponse.json({ error: 'Destinataire introuvable.' }, { status: 404 });
     const message = await db.message.create({
       data: { senderId: user.id, receiverId, listingId, content },
-      include: { sender: { select: { id: true, name: true } } },
+      include: { sender: { select: { id: true, name: true, avatar: true } }, listing: { select: { id: true, title: true, images: true, price: true } } },
     });
     return NextResponse.json({ message }, { status: 201 });
   } catch (error: any) {
